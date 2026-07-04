@@ -1,0 +1,3711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTC 定投多人共享投资控制台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bgmain: '#121418',
+          sidebar: '#1a1d24',
+          card: '#1e2129',
+          accent: '#f59e0b',
+          profit: '#10b981',
+          loss: '#ef4444',
+          textmuted: '#9ca3af',
+        },
+        boxShadow: {
+          card: '0 2px 8px rgba(0,0,0,0.4)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body {
+    background-color: #121418;
+    margin: 0;
+    padding: 0;
+  }
+  /* 自定义滚动条，配合深色主题 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #121418;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2e38;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3e48;
+  }
+</style>
+</head>
+<body class="bg-bgmain text-white font-sans antialiased">
+
+  <div class="min-h-screen flex">
+
+    <!-- ============ 左侧固定侧边栏 ============ -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-screen w-[260px] bg-sidebar flex flex-col z-20">
+
+      <!-- 顶部标题区：高度64px -->
+      <div class="h-16 flex items-center gap-3 px-4 border-b border-black/30 shrink-0">
+        <div class="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
+          <span class="text-white text-xs font-bold">₿</span>
+        </div>
+        <span class="text-white font-bold text-sm leading-tight">BTC DCA V7 多人共享投资控制台</span>
+      </div>
+
+      <!-- 侧边栏可滚动内容区 -->
+      <div class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-6">
+
+        <!-- 主导航菜单 -->
+        <nav class="flex flex-col gap-1">
+          <!-- 总览看板：默认选中态 -->
+          <a href="#" data-page="overview" class="nav-item h-11 flex items-center gap-3 px-4 rounded-md bg-accent text-white text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/>
+            </svg>
+            <span>总览看板</span>
+          </a>
+          <!-- 交易记录 -->
+          <a href="#" data-page="transactions" class="nav-item h-11 flex items-center gap-3 px-4 rounded-md text-textmuted text-sm font-medium hover:bg-white/5 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/>
+            </svg>
+            <span>交易记录</span>
+          </a>
+          <!-- 钱包管理 -->
+          <a href="#" data-page="wallets" class="nav-item h-11 flex items-center gap-3 px-4 rounded-md text-textmuted text-sm font-medium hover:bg-white/5 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 12h.01"/>
+            </svg>
+            <span>钱包管理</span>
+          </a>
+          <!-- 数据分析 -->
+          <a href="#" data-page="analytics" class="nav-item h-11 flex items-center gap-3 px-4 rounded-md text-textmuted text-sm font-medium hover:bg-white/5 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6M15 19V10M4 19h16M4 19v-4M20 19v-8"/>
+            </svg>
+            <span>数据分析</span>
+          </a>
+          <!-- 系统设置 -->
+          <a href="#" data-page="settings" class="nav-item h-11 flex items-center gap-3 px-4 rounded-md text-textmuted text-sm font-medium hover:bg-white/5 transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            <span>系统设置</span>
+          </a>
+        </nav>
+
+        <!-- 快速记录表单区 -->
+        <div>
+          <h3 class="text-white font-bold text-sm mb-3">快速记录</h3>
+          <form id="quick-record-form" class="flex flex-col gap-3">
+            <select id="quick-operator" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+              <option value="碎">操作人：碎</option>
+              <option value="锋">操作人：锋</option>
+              <option value="叨">操作人：叨</option>
+            </select>
+            <select id="quick-wallet" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+              <option value="a">钱包：A钱包</option>
+              <option value="b">钱包：B钱包</option>
+              <option value="c">钱包：C钱包</option>
+            </select>
+            <input id="quick-invested" type="number" step="0.01" min="0" placeholder="投入 USDC" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+            <input id="quick-price" type="number" step="0.01" min="0" placeholder="成交价格 (USD)" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+            <div class="flex items-center justify-between text-xs text-textmuted px-1">
+              <span>自动计算买入BTC：</span>
+              <span id="quick-btc-preview" class="text-white font-medium">0.00000000</span>
+            </div>
+            <p id="quick-tier-hint" class="text-textmuted text-xs leading-relaxed"></p>
+            <p id="quick-record-error" class="text-loss text-xs hidden"></p>
+            <button type="submit" class="w-full bg-accent hover:bg-amber-600 text-white text-sm font-medium rounded-md py-2 transition-colors">
+              提交记录
+            </button>
+          </form>
+        </div>
+
+        <!-- 操作说明区 -->
+        <div>
+          <h3 class="text-white font-bold text-sm mb-2">操作说明</h3>
+          <ol class="text-textmuted text-xs leading-relaxed list-decimal list-inside space-y-1">
+            <li>选择操作人和钱包</li>
+            <li>输入投入金额和购入数量</li>
+            <li>输入成交价格</li>
+            <li>提交记录</li>
+          </ol>
+        </div>
+
+        <!-- 底部系统信息区 -->
+        <div class="pb-2">
+          <h3 class="text-white font-bold text-sm mb-2">系统信息</h3>
+          <ul class="text-textmuted text-xs leading-relaxed space-y-1">
+            <li>版本：V7.0</li>
+            <li>数据来源：Glassnode</li>
+            <li>结算平台：StreamKit Cloud</li>
+            <li>更新状态：实时同步</li>
+          </ul>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ============ 右侧主区域（顶部状态栏 + 主内容） ============ -->
+    <div class="flex-1 flex flex-col ml-[260px] min-w-0">
+
+      <!-- ============ 顶部状态栏容器 ============ -->
+      <header id="topbar" class="sticky top-0 h-16 bg-sidebar border-b border-black/30 flex items-center px-6 z-10 shrink-0">
+        <!-- 顶部状态栏内容占位区域：后续填充标题、实时价格、用户头像等 -->
+        <span class="text-textmuted text-sm">顶部状态栏内容区（待填充）</span>
+      </header>
+
+      <!-- ============ 右侧主内容区（可纵向滚动） ============ -->
+      <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-bgmain">
+
+        <!-- ============ 页面：总览看板 ============ -->
+        <div id="page-overview" class="space-y-5">
+
+        <!-- ============ 行情数据看板 ============ -->
+        <section id="market-dashboard">
+
+          <!-- 数据状态栏：最后更新时间 + 同步状态指示灯 -->
+          <div class="flex items-center justify-between mb-5">
+            <span class="text-textmuted text-sm">
+              最后更新：<span id="last-update-time" class="text-white">加载中...</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+              <span id="status-text" class="text-textmuted text-sm">数据同步中</span>
+            </div>
+          </div>
+
+          <!-- 4张数据卡片，等宽横向排列，间距20px -->
+          <div class="grid grid-cols-4 gap-5">
+
+            <!-- 1. BTC价格卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">BTC 价格</span>
+              <span id="btc-price-value" class="text-white font-bold text-2xl mt-2">$--</span>
+              <div class="flex items-center justify-between mt-3">
+                <span id="btc-price-change" class="text-sm font-medium text-textmuted">--%</span>
+                <svg id="btc-price-spark-svg" viewBox="0 0 80 30" class="w-20 h-8">
+                  <polyline id="btc-price-spark" points="" fill="none" stroke="#9ca3af" stroke-width="2"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- 2. 恐惧贪婪指数卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">恐惧贪婪指数</span>
+              <div class="flex items-baseline gap-2 mt-2">
+                <span id="fng-value" class="text-white font-bold text-2xl">--</span>
+                <span id="fng-label" class="text-textmuted text-xs">--</span>
+              </div>
+              <svg viewBox="0 0 100 55" class="w-full h-12 mt-2">
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#2a2e38" stroke-width="6" stroke-linecap="round"/>
+                <path id="fng-gauge-arc" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-dasharray="125.6" stroke-dashoffset="125.6"/>
+              </svg>
+              <span id="fng-caption" class="text-textmuted text-xs mt-1">市场情绪：--</span>
+            </div>
+
+            <!-- 3. MVRV Z-Score卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">MVRV Z-Score</span>
+              <span id="mvrv-value" class="text-white font-bold text-2xl mt-2">--</span>
+              <svg id="mvrv-spark-svg" viewBox="0 0 80 30" class="w-full h-8 mt-3">
+                <polyline id="mvrv-spark" points="" fill="none" stroke="#9ca3af" stroke-width="2"/>
+              </svg>
+              <span id="mvrv-caption" class="text-textmuted text-xs mt-1">市场状态：--</span>
+            </div>
+
+            <!-- 4. BTC 24h涨跌卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">BTC 24h 涨跌</span>
+              <span id="change24h-value" class="text-white font-bold text-2xl mt-2">--</span>
+              <svg id="change24h-spark-svg" viewBox="0 0 80 30" class="w-full h-8 mt-3">
+                <polyline id="change24h-spark" points="" fill="none" stroke="#9ca3af" stroke-width="2"/>
+              </svg>
+              <span id="change24h-caption" class="text-textmuted text-xs mt-1">涨跌幅：--</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============ 策略信号（自动分析） ============ -->
+        <section id="strategy-signals">
+          <h2 class="text-white font-bold text-base mb-3">策略信号（自动分析）</h2>
+
+          <div class="grid grid-cols-3 gap-5">
+
+            <!-- A钱包：定期定额 - 绿色主题 -->
+            <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-profit flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <span class="text-white font-bold text-sm">A钱包（定期定额）</span>
+                <span id="signal-a-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">待执行</span>
+              </div>
+              <div class="text-textmuted text-xs space-y-1">
+                <p id="signal-a-caption">下次定投日：每月27号</p>
+                <p>策略：每月固定日期定投（27日无法操作可顺延至28日，自动标记"补操作"）</p>
+              </div>
+              <div id="signal-a-suggestion" class="text-white text-sm pt-2 border-t border-white/10">
+                建议操作：稳定执行定投计划
+              </div>
+            </div>
+
+            <!-- B钱包：情绪定投 - 橙黄色主题 -->
+            <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-accent flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <span class="text-white font-bold text-sm">B钱包（情绪定投）</span>
+                <span id="signal-b-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
+              </div>
+              <div class="text-textmuted text-xs space-y-1">
+                <p id="signal-b-caption">当前恐慌指数：--</p>
+                <p>策略：恐惧时买入</p>
+              </div>
+              <div id="signal-b-suggestion" class="text-white text-sm pt-2 border-t border-white/10">
+                建议操作：等待数据
+              </div>
+            </div>
+
+            <!-- C钱包：估值定投 - 红色主题 -->
+            <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-loss flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <span class="text-white font-bold text-sm">C钱包（估值定投）</span>
+                <span id="signal-c-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
+              </div>
+              <div class="text-textmuted text-xs space-y-1">
+                <p id="signal-c-caption">当前MVRV状态：--</p>
+                <p>策略：低估时买入</p>
+              </div>
+              <div id="signal-c-suggestion" class="text-white text-sm pt-2 border-t border-white/10">
+                建议操作：等待数据
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============ 钱包资产概览 ============ -->
+        <section id="wallet-overview">
+          <h2 class="text-white font-bold text-base mb-3">钱包资产概览</h2>
+
+          <div class="grid grid-cols-3 gap-5">
+
+            <!-- A钱包资产卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+              <span class="text-white font-bold text-sm mb-1">A钱包</span>
+              <span id="wallet-a-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
+
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">初始资金</span>
+                <span id="wallet-a-initial" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">已投入</span>
+                <span id="wallet-a-invested" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">剩余资金</span>
+                <span id="wallet-a-remaining" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">BTC持仓</span>
+                <span id="wallet-a-btc" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">平均成本</span>
+                <span id="wallet-a-avgcost" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">浮动盈亏</span>
+                <span id="wallet-a-pnl" class="font-medium text-textmuted">--</span>
+              </div>
+
+              <div class="pt-2">
+                <div class="flex items-center justify-between text-xs text-textmuted mb-1">
+                  <span id="wallet-a-progress-label">已用0/12份</span>
+                  <span id="wallet-a-progress-pct">0%</span>
+                </div>
+                <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div id="wallet-a-progress-bar" class="h-full bg-profit rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- B钱包资产卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+              <span class="text-white font-bold text-sm mb-1">B钱包</span>
+              <span id="wallet-b-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
+
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">初始资金</span>
+                <span id="wallet-b-initial" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">已投入</span>
+                <span id="wallet-b-invested" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">剩余资金</span>
+                <span id="wallet-b-remaining" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">BTC持仓</span>
+                <span id="wallet-b-btc" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">平均成本</span>
+                <span id="wallet-b-avgcost" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">浮动盈亏</span>
+                <span id="wallet-b-pnl" class="font-medium text-textmuted">--</span>
+              </div>
+
+              <div class="pt-2">
+                <div class="flex items-center justify-between text-xs text-textmuted mb-1">
+                  <span id="wallet-b-progress-label">已用0/15份</span>
+                  <span id="wallet-b-progress-pct">0%</span>
+                </div>
+                <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div id="wallet-b-progress-bar" class="h-full bg-accent rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- C钱包资产卡 -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+              <span class="text-white font-bold text-sm mb-1">C钱包</span>
+              <span id="wallet-c-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
+
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">初始资金</span>
+                <span id="wallet-c-initial" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">已投入</span>
+                <span id="wallet-c-invested" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">剩余资金</span>
+                <span id="wallet-c-remaining" class="text-white">$--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">BTC持仓</span>
+                <span id="wallet-c-btc" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">平均成本</span>
+                <span id="wallet-c-avgcost" class="text-white">--</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-textmuted">浮动盈亏</span>
+                <span id="wallet-c-pnl" class="font-medium text-textmuted">--</span>
+              </div>
+
+              <div class="pt-2">
+                <div class="flex items-center justify-between text-xs text-textmuted mb-1">
+                  <span id="wallet-c-progress-label">已用0/25份</span>
+                  <span id="wallet-c-progress-pct">0%</span>
+                </div>
+                <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div id="wallet-c-progress-bar" class="h-full bg-loss rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============ 资产图表：BTC持仓分布 + USDC投入对比 ============ -->
+        <section id="asset-charts">
+          <div class="grid grid-cols-2 gap-5">
+
+            <!-- 左：BTC持仓分布（环形饼图） -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <h2 class="text-white font-bold text-base mb-3">BTC持仓分布</h2>
+              <div class="relative h-64">
+                <canvas id="btc-holding-doughnut"></canvas>
+              </div>
+              <!-- 图表下方图例说明：颜色点 + 钱包名 + BTC数量/占比，随数据自动刷新 -->
+              <div id="btc-holding-legend" class="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-white/10">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-profit shrink-0"></span>
+                  <span class="text-textmuted text-xs">A钱包 <span id="legend-a-value" class="text-white">0.000000 BTC</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-accent shrink-0"></span>
+                  <span class="text-textmuted text-xs">B钱包 <span id="legend-b-value" class="text-white">0.000000 BTC</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-loss shrink-0"></span>
+                  <span class="text-textmuted text-xs">C钱包 <span id="legend-c-value" class="text-white">0.000000 BTC</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右：USDC投入对比（柱状图） -->
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <h2 class="text-white font-bold text-base mb-3">USDC投入对比</h2>
+              <div class="relative h-64">
+                <canvas id="usdc-invested-bar"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ============ 最新交易记录 ============ -->
+        <section id="transaction-records">
+          <h2 class="text-white font-bold text-base mb-3">最新交易记录</h2>
+
+          <div class="bg-card rounded-lg shadow-card border border-white/10 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead>
+                  <tr class="bg-black/20 border-b border-white/10">
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">时间</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">操作者</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">钱包</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">投入USDC</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">买入BTC</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">成交价格(USD)</th>
+                    <th class="px-4 py-3 text-center text-textmuted text-xs font-medium whitespace-nowrap">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="transaction-tbody">
+                  <!-- 由 renderTransactionTable() 动态渲染，默认按时间倒序展示最新10条 -->
+                  <tr>
+                    <td colspan="7" class="px-4 py-6 text-center text-textmuted text-sm">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 全局汇总（三个钱包自动汇总） ============ -->
+        <section id="global-summary">
+          <h2 class="text-white font-bold text-base mb-3">全局汇总</h2>
+          <div class="grid grid-cols-3 gap-5">
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">全局总投入</span>
+              <span id="global-invested" class="text-white font-bold text-2xl mt-2">$--</span>
+            </div>
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">全局总持仓 BTC</span>
+              <span id="global-btc" class="text-white font-bold text-2xl mt-2">--</span>
+            </div>
+            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+              <span class="text-textmuted text-xs">全局浮动盈亏</span>
+              <span id="global-pnl" class="font-bold text-2xl mt-2 text-textmuted">--</span>
+            </div>
+          </div>
+        </section>
+
+        </div>
+        <!-- ============ 页面：总览看板 结束 ============ -->
+
+        <!-- ============ 页面：交易记录 ============ -->
+        <div id="page-transactions" class="hidden space-y-5">
+
+          <!-- 筛选栏 -->
+          <div class="bg-card rounded-lg shadow-card p-5 flex flex-wrap items-center gap-3">
+            <select id="tx-filter-wallet" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+              <option value="all">钱包：全部</option>
+              <option value="a">钱包：A钱包</option>
+              <option value="b">钱包：B钱包</option>
+              <option value="c">钱包：C钱包</option>
+            </select>
+            <select id="tx-filter-operator" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+              <option value="all">操作人：全部</option>
+              <option value="碎">操作人：碎</option>
+              <option value="锋">操作人：锋</option>
+              <option value="叨">操作人：叨</option>
+            </select>
+            <div class="flex items-center gap-2 text-sm text-textmuted">
+              <input type="date" id="tx-filter-start" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+              <span>至</span>
+              <input type="date" id="tx-filter-end" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+            </div>
+            <button type="button" id="tx-filter-reset" class="bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors">
+              重置筛选
+            </button>
+            <div class="flex-1"></div>
+            <button type="button" id="tx-export-csv" class="bg-accent hover:bg-amber-600 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors">
+              导出CSV
+            </button>
+          </div>
+
+          <!-- 全量交易记录表格 -->
+          <div class="bg-card rounded-lg shadow-card border border-white/10 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead>
+                  <tr class="bg-black/20 border-b border-white/10">
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">时间</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">操作者</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">钱包</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">触发档位</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">投入USDC</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">买入BTC</th>
+                    <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">成交价格(USD)</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">提币状态</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">提币哈希</th>
+                    <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">备注</th>
+                    <th class="px-4 py-3 text-center text-textmuted text-xs font-medium whitespace-nowrap">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="tx-full-tbody">
+                  <tr><td colspan="11" class="px-4 py-6 text-center text-textmuted text-sm">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- 分页 -->
+            <div class="flex items-center justify-between px-4 py-3 border-t border-white/10">
+              <span id="tx-page-info" class="text-textmuted text-xs">共0条记录</span>
+              <div class="flex items-center gap-2">
+                <button type="button" id="tx-prev-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">上一页</button>
+                <span id="tx-page-current" class="text-textmuted text-xs px-1">1/1</span>
+                <button type="button" id="tx-next-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">下一页</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- ============ 页面：交易记录 结束 ============ -->
+
+        <!-- ============ 页面：钱包管理 ============ -->
+        <div id="page-wallets" class="hidden space-y-5">
+          <div id="wm-a-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
+          <div id="wm-b-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
+          <div id="wm-c-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
+        </div>
+
+        <!-- ============ 页面：数据分析 ============ -->
+        <div id="page-analytics" class="hidden space-y-5">
+
+          <!-- 模块1：全局收益概览 -->
+          <section>
+            <h2 class="text-white font-bold text-base mb-3">全局收益概览</h2>
+            <div class="grid grid-cols-5 gap-5">
+              <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+                <span class="text-textmuted text-xs">总投入 USDC</span>
+                <span id="an-total-invested" class="text-white font-bold text-xl mt-2">$--</span>
+              </div>
+              <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+                <span class="text-textmuted text-xs">总持仓 BTC</span>
+                <span id="an-total-btc" class="text-white font-bold text-xl mt-2">-- BTC</span>
+              </div>
+              <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+                <span class="text-textmuted text-xs">总浮动盈亏</span>
+                <span id="an-total-pnl" class="font-bold text-xl mt-2 text-textmuted">--</span>
+              </div>
+              <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+                <span class="text-textmuted text-xs">总收益率</span>
+                <span id="an-total-pnl-pct" class="font-bold text-xl mt-2 text-textmuted">--</span>
+              </div>
+              <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
+                <span class="text-textmuted text-xs">整体资金使用率</span>
+                <span id="an-fund-usage" class="text-white font-bold text-xl mt-2">--%</span>
+                <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
+                  <div id="an-fund-usage-bar" class="h-full bg-accent rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块2：钱包横向对比 -->
+          <section>
+            <h2 class="text-white font-bold text-base mb-3">钱包横向对比</h2>
+            <div class="bg-card rounded-lg shadow-card p-5">
+              <div class="h-72">
+                <canvas id="wallet-compare-bar"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <!-- 模块3：成本走势图表 -->
+          <section>
+            <h2 class="text-white font-bold text-base mb-3">成本走势图表</h2>
+            <div class="bg-card rounded-lg shadow-card p-5">
+              <div class="h-80">
+                <canvas id="cost-trend-line"></canvas>
+              </div>
+              <p class="text-textmuted text-xs mt-2">左轴：累计投入USDC（全部钱包合计）&nbsp;&nbsp;|&nbsp;&nbsp;右轴：每笔交易的实际成交价格（USD）</p>
+            </div>
+          </section>
+
+          <!-- 模块4：月度对账统计 -->
+          <section>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-white font-bold text-base">月度对账统计</h2>
+              <select id="an-month-filter" class="bg-card border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+                <option value="all">全部月份</option>
+              </select>
+            </div>
+            <div class="bg-card rounded-lg shadow-card border border-white/10 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse">
+                  <thead>
+                    <tr class="bg-black/20 border-b border-white/10">
+                      <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">月份</th>
+                      <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">买入次数</th>
+                      <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">累计投入USDC</th>
+                      <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">累计买入BTC</th>
+                      <th class="px-4 py-3 text-right text-textmuted text-xs font-medium whitespace-nowrap">月均成本(USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="an-monthly-tbody">
+                    <tr><td colspan="5" class="px-4 py-6 text-center text-textmuted text-sm">暂无交易记录</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- ============ 页面：系统设置 ============ -->
+        <div id="page-settings" class="hidden space-y-5">
+
+          <!-- 1. 自动刷新设置 -->
+          <section class="bg-card rounded-lg shadow-card p-5">
+            <h2 class="text-white font-bold text-base mb-4">自动刷新设置</h2>
+            <div class="flex items-center justify-between py-2 border-b border-white/10">
+              <div>
+                <div class="text-white text-sm font-medium">开启自动刷新</div>
+                <div class="text-textmuted text-xs mt-0.5">关闭后行情数据将不再自动轮询，仅首次加载一次</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" id="settings-auto-refresh-toggle" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-white/10 rounded-full peer-checked:bg-accent transition-colors relative">
+                  <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                </div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between py-3">
+              <div class="text-white text-sm font-medium">行情数据刷新频率</div>
+              <select id="settings-refresh-interval" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+                <option value="1">1分钟</option>
+                <option value="5" selected>5分钟</option>
+                <option value="15">15分钟</option>
+                <option value="30">30分钟</option>
+                <option value="60">1小时</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- 2. 数据备份与恢复 -->
+          <section class="bg-card rounded-lg shadow-card p-5">
+            <h2 class="text-white font-bold text-base mb-4">数据备份与恢复</h2>
+            <div class="flex items-center justify-between py-2 border-b border-white/10">
+              <div>
+                <div class="text-white text-sm font-medium">导出备份</div>
+                <div class="text-textmuted text-xs mt-0.5">将全量交易记录 + 钱包配置导出为JSON文件</div>
+              </div>
+              <button type="button" id="settings-export-backup" class="bg-accent hover:bg-amber-600 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0">导出备份</button>
+            </div>
+            <div class="flex items-center justify-between py-3">
+              <div>
+                <div class="text-white text-sm font-medium">导入恢复</div>
+                <div class="text-textmuted text-xs mt-0.5">上传JSON备份文件恢复数据，导入前会二次确认</div>
+              </div>
+              <div class="shrink-0">
+                <input type="file" id="settings-import-file" accept="application/json" class="hidden">
+                <button type="button" id="settings-import-backup" class="bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors">导入恢复</button>
+              </div>
+            </div>
+            <p id="settings-backup-error" class="text-loss text-xs mt-2 hidden"></p>
+          </section>
+
+          <!-- 3. 数据重置 -->
+          <section class="bg-card rounded-lg shadow-card p-5 border-l-4 border-loss">
+            <h2 class="text-white font-bold text-base mb-4">数据重置</h2>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-white text-sm font-medium">一键重置</div>
+                <div class="text-textmuted text-xs mt-0.5">清空所有交易记录，三个钱包还原为初始资金状态（钱包地址/配置不受影响）</div>
+              </div>
+              <button type="button" id="settings-reset-data" class="bg-loss hover:opacity-90 text-white text-sm font-medium rounded-md px-4 py-2 transition-colors shrink-0">一键重置</button>
+            </div>
+          </section>
+
+          <!-- 4. 显示设置 -->
+          <section class="bg-card rounded-lg shadow-card p-5">
+            <h2 class="text-white font-bold text-base mb-4">显示设置</h2>
+            <div class="flex items-center justify-between py-2 border-b border-white/10">
+              <div class="text-white text-sm font-medium">USDC 保留小数位数</div>
+              <select id="settings-usdc-decimals" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+                <option value="0">0位</option>
+                <option value="1">1位</option>
+                <option value="2" selected>2位</option>
+                <option value="4">4位</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between py-3 border-b border-white/10">
+              <div class="text-white text-sm font-medium">BTC 保留小数位数</div>
+              <select id="settings-btc-decimals" class="bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+                <option value="2">2位</option>
+                <option value="4">4位</option>
+                <option value="6">6位</option>
+                <option value="8" selected>8位</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between py-3">
+              <div>
+                <div class="text-white text-sm font-medium">显示迷你走势图</div>
+                <div class="text-textmuted text-xs mt-0.5">行情看板卡片内的迷你折线走势图</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                <input type="checkbox" id="settings-show-sparklines-toggle" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-white/10 rounded-full peer-checked:bg-accent transition-colors relative">
+                  <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                </div>
+              </label>
+            </div>
+          </section>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ============ 轻提示 Toast（用于地址复制成功等反馈） ============ -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/90 text-white text-sm rounded-md px-4 py-2 shadow-lg z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+    已复制到剪贴板
+  </div>
+
+  <!-- ============ 交易记录编辑弹窗 ============ -->
+  <div id="edit-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-30">
+    <div class="bg-card rounded-lg shadow-card p-6 w-[360px] flex flex-col gap-3">
+      <h3 class="text-white font-bold text-sm mb-1">编辑交易记录</h3>
+      <select id="edit-operator" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+        <option value="碎">操作人：碎</option>
+        <option value="锋">操作人：锋</option>
+        <option value="叨">操作人：叨</option>
+      </select>
+      <select id="edit-wallet" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+        <option value="a">钱包：A钱包</option>
+        <option value="b">钱包：B钱包</option>
+        <option value="c">钱包：C钱包</option>
+      </select>
+      <input id="edit-invested" type="number" step="0.01" min="0" placeholder="投入 USDC" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+      <input id="edit-price" type="number" step="0.01" min="0" placeholder="成交价格 (USD)" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+      <div class="flex items-center justify-between text-xs text-textmuted px-1">
+        <span>自动计算买入BTC：</span>
+        <span id="edit-btc-preview" class="text-white font-medium">0.00000000</span>
+      </div>
+      <select id="edit-trigger-tier" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+        <option value="--">触发档位：--</option>
+        <option value="定期">触发档位：定期</option>
+        <option value="补操作">触发档位：补操作</option>
+        <option value="第一档">触发档位：第一档</option>
+        <option value="第二档">触发档位：第二档</option>
+        <option value="收尾买入">触发档位：收尾买入</option>
+        <option value="手动">触发档位：手动</option>
+      </select>
+      <select id="edit-withdraw-status" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 focus:outline-none focus:border-accent">
+        <option value="未提币">提币状态：未提币</option>
+        <option value="提币中">提币状态：提币中</option>
+        <option value="已到账">提币状态：已到账</option>
+      </select>
+      <input id="edit-withdraw-hash" type="text" placeholder="提币哈希（选填）" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+      <input id="edit-note" type="text" placeholder="备注（选填）" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-accent">
+      <p id="edit-record-error" class="text-loss text-xs hidden"></p>
+      <div class="flex items-center gap-3 mt-2">
+        <button type="button" id="edit-cancel-btn" class="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md py-2 transition-colors">取消</button>
+        <button type="button" id="edit-save-btn" class="flex-1 bg-accent hover:bg-amber-600 text-white text-sm font-medium rounded-md py-2 transition-colors">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 导入恢复 二次确认弹窗 ============ -->
+  <div id="import-confirm-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-30">
+    <div class="bg-card rounded-lg shadow-card p-6 w-[380px] flex flex-col gap-3">
+      <h3 class="text-white font-bold text-sm mb-1">确认导入备份数据？</h3>
+      <p class="text-textmuted text-sm">导入将<span class="text-loss">覆盖当前全部交易记录与钱包配置</span>，且无法撤销。建议先导出一份当前数据作为备份。</p>
+      <p id="import-confirm-filename" class="text-textmuted text-xs font-mono"></p>
+      <div class="flex items-center gap-3 mt-2">
+        <button type="button" id="import-confirm-cancel" class="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md py-2 transition-colors">取消</button>
+        <button type="button" id="import-confirm-ok" class="flex-1 bg-accent hover:bg-amber-600 text-white text-sm font-medium rounded-md py-2 transition-colors">确认导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 一键重置 二次确认弹窗（需输入确认文字） ============ -->
+  <div id="reset-confirm-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-30">
+    <div class="bg-card rounded-lg shadow-card p-6 w-[380px] flex flex-col gap-3">
+      <h3 class="text-white font-bold text-sm mb-1">确认一键重置？</h3>
+      <p class="text-textmuted text-sm">此操作将<span class="text-loss">清空所有交易记录</span>，三个钱包持仓与已投入金额都会归零，且无法撤销。</p>
+      <p class="text-textmuted text-sm">请输入 <span class="text-white font-mono">确认重置</span> 以继续：</p>
+      <input type="text" id="reset-confirm-input" placeholder="请输入：确认重置" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-loss">
+      <div class="flex items-center gap-3 mt-2">
+        <button type="button" id="reset-confirm-cancel" class="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md py-2 transition-colors">取消</button>
+        <button type="button" id="reset-confirm-ok" disabled class="flex-1 bg-loss disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 text-white text-sm font-medium rounded-md py-2 transition-colors">确认重置</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  // ============================================================
+  // 本地存储统一管理层
+  // 三类核心数据全部经由本层读写：
+  //   1) 交易记录列表  TRANSACTIONS
+  //   2) 钱包配置参数（初始资金/总份数/地址） WALLET_CONFIG
+  //   3) 缓存行情数据（BTC价格/恐惧贪婪指数/MVRV等） MARKET_CACHE
+  // 任何一类数据损坏/格式异常，都会被单独校验拦截，
+  // 弹出提示后自动回退为默认值，不影响其余两类数据。
+  // ============================================================
+  const STORAGE_KEYS = {
+    TRANSACTIONS: 'btc-dca-transactions-v1',
+    WALLET_CONFIG: 'btc-dca-wallet-config-v2',
+    MARKET_CACHE: 'btc-dca-market-cache-v1',
+    SETTINGS: 'btc-dca-app-settings-v1'
+  };
+
+  function isPlainObject(v) {
+    return v !== null && typeof v === 'object' && !Array.isArray(v);
+  }
+
+  function cloneDeep(v) {
+    return JSON.parse(JSON.stringify(v));
+  }
+
+  function isLocalStorageAvailable() {
+    try {
+      const testKey = '__btc_dca_storage_test__';
+      window.localStorage.setItem(testKey, '1');
+      window.localStorage.removeItem(testKey);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  const STORAGE_AVAILABLE = isLocalStorageAvailable();
+  if (!STORAGE_AVAILABLE) {
+    console.warn('[本地存储] 当前环境无法使用 localStorage，数据将仅保留在本次会话内');
+  }
+
+  /**
+   * 安全读取并校验某一类存储数据：
+   *   - key 不存在 → 视为"首次访问"，静默返回默认值（不弹窗）
+   *   - key 存在但 JSON 解析失败或未通过校验 → 视为"数据异常"，
+   *     清除该条脏数据、弹窗告知用户、回退默认值
+   */
+  function safeLoadJSON(key, validator, defaultValue, label) {
+    if (!STORAGE_AVAILABLE) return cloneDeep(defaultValue);
+
+    let raw;
+    try {
+      raw = window.localStorage.getItem(key);
+    } catch (e) {
+      console.warn(`[本地存储] 读取 ${label} 失败`, e);
+      return cloneDeep(defaultValue);
+    }
+
+    if (raw === null) {
+      // 首次访问：本地没有任何记录，直接使用默认参数，不提示
+      return cloneDeep(defaultValue);
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (!validator(parsed)) {
+        throw new Error('数据结构未通过校验');
+      }
+      return parsed;
+    } catch (e) {
+      console.warn(`[本地存储] ${label} 数据损坏或格式异常，已自动恢复默认值`, e);
+      try {
+        window.localStorage.removeItem(key);
+      } catch (_) { /* 忽略清理失败 */ }
+      window.alert(`检测到本地存储中的「${label}」数据异常，已自动恢复为默认值。`);
+      return cloneDeep(defaultValue);
+    }
+  }
+
+  function safeSaveJSON(key, value) {
+    if (!STORAGE_AVAILABLE) return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`[本地存储] 写入 ${key} 失败`, e);
+    }
+  }
+
+  // ---- 校验器：三类数据各自的最小结构校验 ----
+  function validateWalletConfig(v) {
+    if (!isPlainObject(v)) return false;
+    return ['a', 'b', 'c'].every((k) => {
+      const w = v[k];
+      return (
+        isPlainObject(w) &&
+        typeof w.initial === 'number' && Number.isFinite(w.initial) && w.initial > 0 &&
+        typeof w.totalShares === 'number' && Number.isFinite(w.totalShares) && w.totalShares > 0 &&
+        typeof w.owner === 'string' && w.owner.trim().length > 0 &&
+        typeof w.strategy === 'string' && w.strategy.trim().length > 0 &&
+        typeof w.evmAddress === 'string' &&
+        typeof w.btcAddress === 'string' // 允许为空字符串，表示"待补充"（如B钱包BTC地址）
+      );
+    });
+  }
+
+  function validateTransactionRecords(v) {
+    if (!Array.isArray(v)) return false;
+    return v.every((r) => {
+      if (!isPlainObject(r)) return false;
+      const timeValid = typeof r.time === 'string' && !isNaN(new Date(r.time).getTime());
+      return (
+        typeof r.id === 'string' && r.id.length > 0 &&
+        timeValid &&
+        typeof r.operator === 'string' && r.operator.length > 0 &&
+        ['a', 'b', 'c'].includes(r.wallet) &&
+        typeof r.investedUsdc === 'number' && Number.isFinite(r.investedUsdc) && r.investedUsdc >= 0 &&
+        typeof r.btcAmount === 'number' && Number.isFinite(r.btcAmount) && r.btcAmount >= 0 &&
+        typeof r.price === 'number' && Number.isFinite(r.price) && r.price >= 0
+      );
+    });
+  }
+
+  function validateMarketCache(v) {
+    if (!isPlainObject(v)) return false;
+    const numOrNull = (x) => x === null || (typeof x === 'number' && Number.isFinite(x));
+    const numericKeys = ['btcPrice', 'btcChangePct', 'fng', 'mvrv', 'change24hAmount', 'change24hPct'];
+    for (const k of numericKeys) {
+      if (k in v && !numOrNull(v[k])) return false;
+    }
+    const arrayKeys = ['btcSpark', 'mvrvSpark', 'change24hSpark'];
+    for (const k of arrayKeys) {
+      if (k in v && !Array.isArray(v[k])) return false;
+    }
+    if ('mvrvConfigured' in v && typeof v.mvrvConfigured !== 'boolean') return false;
+    return true;
+  }
+
+  // ============ 缓存：保存最近一次成功获取的数据，用于失败时回退展示 ============
+  // 规则③：行情数据每次接口更新成功后写入缓存；页面刷新后先用本地存储的缓存值渲染，
+  // 避免刷新瞬间所有行情卡片变回"--"。
+  const DEFAULT_MARKET_CACHE = {
+    btcPrice: null,
+    btcChangePct: null,
+    btcSpark: [],
+    fng: null,
+    mvrv: null,
+    mvrvSpark: [],
+    mvrvConfigured: false,
+    change24hAmount: null,
+    change24hPct: null,
+    change24hSpark: []
+  };
+  const cache = Object.assign(
+    {},
+    DEFAULT_MARKET_CACHE,
+    safeLoadJSON(STORAGE_KEYS.MARKET_CACHE, validateMarketCache, DEFAULT_MARKET_CACHE, '行情缓存数据')
+  );
+
+  function saveMarketCacheToStorage() {
+    safeSaveJSON(STORAGE_KEYS.MARKET_CACHE, cache);
+  }
+
+  const els = {
+    lastUpdate: document.getElementById('last-update-time'),
+    statusDot: document.getElementById('status-dot'),
+    statusText: document.getElementById('status-text'),
+    btcPriceValue: document.getElementById('btc-price-value'),
+    btcPriceChange: document.getElementById('btc-price-change'),
+    btcPriceSpark: document.getElementById('btc-price-spark'),
+    fngValue: document.getElementById('fng-value'),
+    fngLabel: document.getElementById('fng-label'),
+    fngArc: document.getElementById('fng-gauge-arc'),
+    fngCaption: document.getElementById('fng-caption'),
+    mvrvValue: document.getElementById('mvrv-value'),
+    mvrvSpark: document.getElementById('mvrv-spark'),
+    mvrvCaption: document.getElementById('mvrv-caption'),
+    change24hValue: document.getElementById('change24h-value'),
+    change24hSpark: document.getElementById('change24h-spark'),
+    change24hCaption: document.getElementById('change24h-caption'),
+    signalBStatus: document.getElementById('signal-b-status'),
+    signalBCaption: document.getElementById('signal-b-caption'),
+    signalBSuggestion: document.getElementById('signal-b-suggestion'),
+    signalCStatus: document.getElementById('signal-c-status'),
+    signalCCaption: document.getElementById('signal-c-caption'),
+    signalCSuggestion: document.getElementById('signal-c-suggestion'),
+    signalAStatus: document.getElementById('signal-a-status'),
+    signalACaption: document.getElementById('signal-a-caption'),
+    signalASuggestion: document.getElementById('signal-a-suggestion')
+  };
+
+  // ============ 钱包资产概览：各卡片 DOM 引用 ============
+  const walletEls = {
+    a: {
+      address: document.getElementById('wallet-a-address'),
+      initial: document.getElementById('wallet-a-initial'),
+      invested: document.getElementById('wallet-a-invested'),
+      remaining: document.getElementById('wallet-a-remaining'),
+      btc: document.getElementById('wallet-a-btc'),
+      avgcost: document.getElementById('wallet-a-avgcost'),
+      pnl: document.getElementById('wallet-a-pnl'),
+      progressLabel: document.getElementById('wallet-a-progress-label'),
+      progressPct: document.getElementById('wallet-a-progress-pct'),
+      progressBar: document.getElementById('wallet-a-progress-bar')
+    },
+    b: {
+      address: document.getElementById('wallet-b-address'),
+      initial: document.getElementById('wallet-b-initial'),
+      invested: document.getElementById('wallet-b-invested'),
+      remaining: document.getElementById('wallet-b-remaining'),
+      btc: document.getElementById('wallet-b-btc'),
+      avgcost: document.getElementById('wallet-b-avgcost'),
+      pnl: document.getElementById('wallet-b-pnl'),
+      progressLabel: document.getElementById('wallet-b-progress-label'),
+      progressPct: document.getElementById('wallet-b-progress-pct'),
+      progressBar: document.getElementById('wallet-b-progress-bar')
+    },
+    c: {
+      address: document.getElementById('wallet-c-address'),
+      initial: document.getElementById('wallet-c-initial'),
+      invested: document.getElementById('wallet-c-invested'),
+      remaining: document.getElementById('wallet-c-remaining'),
+      btc: document.getElementById('wallet-c-btc'),
+      avgcost: document.getElementById('wallet-c-avgcost'),
+      pnl: document.getElementById('wallet-c-pnl'),
+      progressLabel: document.getElementById('wallet-c-progress-label'),
+      progressPct: document.getElementById('wallet-c-progress-pct'),
+      progressBar: document.getElementById('wallet-c-progress-bar')
+    }
+  };
+
+  // ============================================================
+  // 精度工具函数：严格按业务规则做四舍五入，避免浮点误差累积
+  // ============================================================
+  function round2(v) {
+    return Math.round((Number(v) + Number.EPSILON) * 100) / 100;
+  }
+  function round8(v) {
+    return Math.round((Number(v) + Number.EPSILON) * 1e8) / 1e8;
+  }
+
+  // ============================================================
+  // 钱包配置（初始资金 / 总份数 / 地址为固定业务参数，不随交易变化）
+  // 单份USDC金额 = 初始资金 ÷ 总份数，保留2位小数（规则①）
+  // 首次访问：使用下方内置默认参数，并写入本地存储；
+  // 非首次访问：直接从本地存储读取（若数据损坏则弹窗提示并回退默认值）。
+  // ============================================================
+  const DEFAULT_WALLET_CONFIG = {
+    a: {
+      initial: 67417.50, totalShares: 12,
+      owner: '碎', strategy: '定期定投',
+      evmAddress: '0x43A005735E2a742b87Edf013f6AE76A58f23265B',
+      btcAddress: 'bc1p8k0uwe726hjzzkdanm602yc8m829gg080r5yuxyqz5squq3as6tsdq0h7h'
+    },
+    b: {
+      initial: 101126.25, totalShares: 15,
+      owner: '锋', strategy: '情绪定投',
+      evmAddress: '0xF6c766E89aEB00c0842Da65EaDdC8A3BF1eA5E15',
+      btcAddress: '' // 待补充
+    },
+    c: {
+      initial: 168543.75, totalShares: 25,
+      owner: '叨', strategy: '估值定投',
+      evmAddress: '0xF6c766E89aEB00c0842Da65EaDdC8A3BF1eA5E15',
+      btcAddress: 'bc1pj8lvgpqvhwrdwy3gjtvfjltgrz5wcrk00un7p8lleuttwhafxlfstfcwy2'
+    }
+  };
+
+  const WALLET_CONFIG = safeLoadJSON(
+    STORAGE_KEYS.WALLET_CONFIG,
+    validateWalletConfig,
+    DEFAULT_WALLET_CONFIG,
+    '钱包配置参数'
+  );
+  // 首次访问（或异常重置后）立即落盘，确保下一次访问能从本地存储正常读取
+  safeSaveJSON(STORAGE_KEYS.WALLET_CONFIG, WALLET_CONFIG);
+
+  function perShareAmount(key) {
+    const cfg = WALLET_CONFIG[key];
+    if (!cfg || !cfg.totalShares) return 0;
+    return round2(cfg.initial / cfg.totalShares);
+  }
+
+  // walletState 为"派生状态"，永远由 transactionRecords 重新聚合计算得出，
+  // 不再支持外部直接增量写入，避免和交易记录数据产生不一致。
+  const walletState = {
+    a: { initial: WALLET_CONFIG.a.initial, totalShares: WALLET_CONFIG.a.totalShares, owner: WALLET_CONFIG.a.owner, strategy: WALLET_CONFIG.a.strategy, evmAddress: WALLET_CONFIG.a.evmAddress, btcAddress: WALLET_CONFIG.a.btcAddress, usedShares: 0, invested: 0, btc: 0 },
+    b: { initial: WALLET_CONFIG.b.initial, totalShares: WALLET_CONFIG.b.totalShares, owner: WALLET_CONFIG.b.owner, strategy: WALLET_CONFIG.b.strategy, evmAddress: WALLET_CONFIG.b.evmAddress, btcAddress: WALLET_CONFIG.b.btcAddress, usedShares: 0, invested: 0, btc: 0 },
+    c: { initial: WALLET_CONFIG.c.initial, totalShares: WALLET_CONFIG.c.totalShares, owner: WALLET_CONFIG.c.owner, strategy: WALLET_CONFIG.c.strategy, evmAddress: WALLET_CONFIG.c.evmAddress, btcAddress: WALLET_CONFIG.c.btcAddress, usedShares: 0, invested: 0, btc: 0 }
+  };
+
+  // 保存钱包配置改动（如地址编辑）：同步 WALLET_CONFIG + walletState + 本地存储
+  function updateWalletConfigField(key, field, value) {
+    if (!WALLET_CONFIG[key]) return;
+    WALLET_CONFIG[key][field] = value;
+    walletState[key][field] = value;
+    safeSaveJSON(STORAGE_KEYS.WALLET_CONFIG, WALLET_CONFIG);
+  }
+
+  // ============================================================
+  // 系统设置（自动刷新频率与开关 / USDC与BTC显示小数位 / 是否显示迷你走势图）
+  // 持久化到本地存储，刷新页面后保持用户上次的选择
+  // ============================================================
+  const DEFAULT_SETTINGS = {
+    autoRefreshEnabled: true,
+    refreshIntervalMinutes: 5,
+    usdcDecimals: 2,
+    btcDecimals: 8,
+    showSparklines: true
+  };
+
+  function validateSettings(v) {
+    return (
+      isPlainObject(v) &&
+      typeof v.autoRefreshEnabled === 'boolean' &&
+      typeof v.refreshIntervalMinutes === 'number' && [1, 5, 15, 30, 60].includes(v.refreshIntervalMinutes) &&
+      typeof v.usdcDecimals === 'number' && v.usdcDecimals >= 0 && v.usdcDecimals <= 8 &&
+      typeof v.btcDecimals === 'number' && v.btcDecimals >= 0 && v.btcDecimals <= 8 &&
+      typeof v.showSparklines === 'boolean'
+    );
+  }
+
+  const APP_SETTINGS = safeLoadJSON(STORAGE_KEYS.SETTINGS, validateSettings, DEFAULT_SETTINGS, '系统设置');
+  safeSaveJSON(STORAGE_KEYS.SETTINGS, APP_SETTINGS);
+
+  function saveSettings() {
+    safeSaveJSON(STORAGE_KEYS.SETTINGS, APP_SETTINGS);
+  }
+
+  function formatUsdc(v) {
+    const d = APP_SETTINGS.usdcDecimals;
+    return `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+  }
+
+  // BTC数值按"显示设置"里的小数位数格式化（仅影响展示，交易记录内部仍以8位精度存储与计算）
+  function formatBtcNum(v) {
+    return Number(v).toFixed(APP_SETTINGS.btcDecimals);
+  }
+
+  /**
+   * 核心联动引擎：从 transactionRecords 重新聚合出每个钱包的
+   * 累计投入 / 累计持仓BTC / 已用份数，规则②③⑤⑧全部在此处统一计算。
+   * 交易记录任何增删改之后都必须调用本函数，是整套联动的唯一数据入口。
+   */
+  function recomputeWalletsFromTransactions() {
+    const sums = {
+      a: { invested: 0, btc: 0 },
+      b: { invested: 0, btc: 0 },
+      c: { invested: 0, btc: 0 }
+    };
+
+    transactionRecords.forEach((r) => {
+      const key = r.wallet;
+      if (!sums[key]) return;
+      sums[key].invested += Number(r.investedUsdc) || 0;
+      sums[key].btc += Number(r.btcAmount) || 0;
+    });
+
+    ['a', 'b', 'c'].forEach((key) => {
+      const w = walletState[key];
+      const share = perShareAmount(key);
+      const invested = round2(sums[key].invested); // 规则③：累计投入USDC，保留2位小数
+      const btc = round8(sums[key].btc); // 规则⑤：累计持仓BTC，保留8位小数
+      const rawShares = share > 0 ? invested / share : 0; // 规则⑧：份数 = 投入USDC ÷ 单份金额
+      w.invested = invested;
+      w.btc = btc;
+      w.usedShares = Math.max(0, Math.min(w.totalShares, rawShares)); // 最大值不超过总份数
+    });
+  }
+
+  // 渲染单个钱包卡片：所有派生字段（剩余资金/平均成本/浮动盈亏/进度）均在此处统一计算，
+  // 确保剩余资金不为负、进度条不超过100%。
+  function renderWallet(key) {
+    const w = walletState[key];
+    const e = walletEls[key];
+    if (!w || !e) return;
+
+    const invested = round2(Math.max(0, w.invested)); // 规则③
+    const remaining = round2(Math.max(0, w.initial - invested)); // 规则④：禁止负值
+    const btc = round8(Math.max(0, w.btc)); // 规则⑤
+    const avgCost = btc > 0 ? round2(invested / btc) : null; // 规则⑥：持仓为0时为 null → 显示"--"
+    const currentPrice = cache.btcPrice;
+    const pnl = (currentPrice != null && btc > 0) ? round2((currentPrice - avgCost) * btc) : null; // 规则⑦
+    const pnlPct = (pnl != null && invested > 0) ? round2((pnl / invested) * 100) : null; // 规则⑦：同步计算盈亏率
+    const usedShares = Math.max(0, Math.min(w.totalShares, w.usedShares));
+    const progressPct = w.totalShares > 0 ? Math.min(100, Math.max(0, (usedShares / w.totalShares) * 100)) : 0; // 规则⑧：最大值100%
+
+    e.initial.textContent = formatUsdc(w.initial);
+    if (e.address) {
+      const addr = w.btcAddress || '';
+      if (!addr) {
+        e.address.textContent = 'BTC地址：待补充';
+        e.address.className = 'text-accent text-[11px] font-mono truncate -mt-1 mb-1';
+        e.address.title = '';
+      } else {
+        const shortAddr = addr.length > 18 ? `${addr.slice(0, 10)}...${addr.slice(-6)}` : addr;
+        e.address.textContent = `BTC地址：${shortAddr}`;
+        e.address.className = 'text-textmuted text-[11px] font-mono truncate -mt-1 mb-1';
+        e.address.title = addr;
+      }
+    }
+    e.invested.textContent = formatUsdc(invested);
+    e.remaining.textContent = formatUsdc(remaining);
+    e.btc.textContent = btc > 0 ? `${formatBtcNum(btc)} BTC` : '-- BTC';
+    e.avgcost.textContent = avgCost != null ? `$${avgCost.toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}` : '--';
+
+    if (pnl != null) {
+      const up = pnl >= 0;
+      const pctText = pnlPct != null ? ` (${up ? '+' : ''}${pnlPct.toFixed(2)}%)` : '';
+      e.pnl.textContent = `${up ? '+' : '-'}$${Math.abs(pnl).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}${pctText}`;
+      e.pnl.className = `text-sm font-medium ${up ? 'text-profit' : 'text-loss'}`;
+    } else {
+      e.pnl.textContent = '--';
+      e.pnl.className = 'text-sm font-medium text-textmuted';
+    }
+
+    e.progressLabel.textContent = `已用${usedShares.toFixed(1).replace(/\.0$/, '')}/${w.totalShares}份`;
+    e.progressPct.textContent = `${progressPct.toFixed(0)}%`;
+    e.progressBar.style.width = `${progressPct}%`;
+  }
+
+  function renderWallets() {
+    renderWallet('a');
+    renderWallet('b');
+    renderWallet('c');
+    refreshAssetCharts(); // 钱包数据变动后联动刷新饼图/柱状图
+    renderGlobalSummary(); // 联动刷新全局汇总（总投入/总持仓/总盈亏）
+    if (typeof renderWalletManagementPage === 'function') renderWalletManagementPage(); // 联动刷新"钱包管理"页面
+    if (typeof renderAnalyticsPage === 'function') renderAnalyticsPage(); // 联动刷新"数据分析"页面
+  }
+
+  // 全局汇总：自动汇总三个钱包数据，计算全局总投入、总持仓、总盈亏
+  function renderGlobalSummary() {
+    const elInvested = document.getElementById('global-invested');
+    const elBtc = document.getElementById('global-btc');
+    const elPnl = document.getElementById('global-pnl');
+    if (!elInvested || !elBtc || !elPnl) return;
+
+    let totalInvested = 0;
+    let totalBtc = 0;
+    let totalPnl = 0;
+    let hasPnl = false;
+    const currentPrice = cache.btcPrice;
+
+    ['a', 'b', 'c'].forEach((key) => {
+      const w = walletState[key];
+      const invested = round2(Math.max(0, w.invested));
+      const btc = round8(Math.max(0, w.btc));
+      totalInvested += invested;
+      totalBtc += btc;
+      if (currentPrice != null && btc > 0) {
+        const avgCost = round2(invested / btc);
+        totalPnl += round2((currentPrice - avgCost) * btc);
+        hasPnl = true;
+      }
+    });
+
+    totalInvested = round2(totalInvested);
+    totalBtc = round8(totalBtc);
+    totalPnl = round2(totalPnl);
+
+    elInvested.textContent = formatUsdc(totalInvested);
+    elBtc.textContent = totalBtc > 0 ? `${formatBtcNum(totalBtc)} BTC` : '-- BTC';
+
+    if (hasPnl) {
+      const up = totalPnl >= 0;
+      const pct = totalInvested > 0 ? round2((totalPnl / totalInvested) * 100) : null;
+      const pctText = pct != null ? ` (${up ? '+' : ''}${pct.toFixed(2)}%)` : '';
+      elPnl.textContent = `${up ? '+' : '-'}$${Math.abs(totalPnl).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}${pctText}`;
+      elPnl.className = `font-bold text-2xl mt-2 ${up ? 'text-profit' : 'text-loss'}`;
+    } else {
+      elPnl.textContent = '--';
+      elPnl.className = 'font-bold text-2xl mt-2 text-textmuted';
+    }
+  }
+
+  // ============================================================
+  // 资产图表：BTC持仓分布（环形图） + USDC投入对比（柱状图）
+  // 深色背景适配：坐标轴/刻度/图例文字统一使用浅灰 #9ca3af
+  // ============================================================
+  const CHART_COLORS = { a: '#10b981', b: '#f59e0b', c: '#ef4444' }; // A绿 B橙 C红
+  const CHART_LABELS = { a: 'A钱包', b: 'B钱包', c: 'C钱包' };
+  const CHART_MUTED = '#9ca3af';
+  const CHART_GRID = 'rgba(255, 255, 255, 0.06)';
+
+  let btcDoughnutChart = null;
+  let usdcBarChart = null;
+
+  // 环形图中心文字插件：显示"总持仓"标签 + 总BTC数量两行
+  const centerTextPlugin = {
+    id: 'walletCenterText',
+    afterDraw(chart) {
+      if (chart.canvas.id !== 'btc-holding-doughnut') return;
+      const { ctx, chartArea } = chart;
+      const cx = (chartArea.left + chartArea.right) / 2;
+      const cy = (chartArea.top + chartArea.bottom) / 2;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = CHART_MUTED;
+      ctx.font = '12px sans-serif';
+      ctx.fillText('总持仓', cx, cy - 13);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText(chart.$centerTotalText || '0.000000 BTC', cx, cy + 11);
+      ctx.restore();
+    }
+  };
+
+  // 柱状图数值标注插件：柱顶标注具体USDC金额
+  const barValueLabelPlugin = {
+    id: 'barValueLabels',
+    afterDatasetsDraw(chart) {
+      if (chart.canvas.id !== 'usdc-invested-bar') return;
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      meta.data.forEach((bar, i) => {
+        const value = chart.data.datasets[0].data[i] || 0;
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(`$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, bar.x, bar.y - 6);
+        ctx.restore();
+      });
+    }
+  };
+
+  function initAssetCharts() {
+    const doughnutCanvas = document.getElementById('btc-holding-doughnut');
+    const barCanvas = document.getElementById('usdc-invested-bar');
+    if (!doughnutCanvas || !barCanvas || typeof Chart === 'undefined') return;
+
+    btcDoughnutChart = new Chart(doughnutCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: [CHART_LABELS.a, CHART_LABELS.b, CHART_LABELS.c],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: [CHART_COLORS.a, CHART_COLORS.b, CHART_COLORS.c],
+          borderColor: '#1e2129',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { display: false }, // 使用下方自定义图例，而非默认图例
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                return `${ctx.label}：${Number(ctx.parsed).toFixed(6)} BTC`;
+              }
+            }
+          }
+        }
+      },
+      plugins: [centerTextPlugin]
+    });
+
+    usdcBarChart = new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels: [CHART_LABELS.a, CHART_LABELS.b, CHART_LABELS.c],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: [CHART_COLORS.a, CHART_COLORS.b, CHART_COLORS.c],
+          borderRadius: 4,
+          maxBarThickness: 64
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 28 } }, // 预留柱顶数值标注的空间
+        scales: {
+          x: {
+            ticks: { color: CHART_MUTED },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: CHART_MUTED,
+              callback: (v) => `$${Number(v).toLocaleString()}`
+            },
+            grid: { color: CHART_GRID }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `$${Number(ctx.parsed.y).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+            }
+          }
+        }
+      },
+      plugins: [barValueLabelPlugin]
+    });
+  }
+
+  /**
+   * 对外数据接口③：刷新资产图表（环形图 + 柱状图）
+   * 直接从 walletState 读取当前数据重绘，交易记录变动后会通过
+   * refreshAll() 自动触发（renderWallets 内部调用），也可手动调用：
+   *   window.refreshAssetCharts()
+   */
+  function refreshAssetCharts() {
+    const btcA = Math.max(0, walletState.a.btc);
+    const btcB = Math.max(0, walletState.b.btc);
+    const btcC = Math.max(0, walletState.c.btc);
+    const totalBtc = btcA + btcB + btcC;
+
+    if (btcDoughnutChart) {
+      if (totalBtc > 0) {
+        btcDoughnutChart.data.labels = [CHART_LABELS.a, CHART_LABELS.b, CHART_LABELS.c];
+        btcDoughnutChart.data.datasets[0].data = [btcA, btcB, btcC];
+        btcDoughnutChart.data.datasets[0].backgroundColor = [CHART_COLORS.a, CHART_COLORS.b, CHART_COLORS.c];
+      } else {
+        // 尚无持仓时显示占位灰环，避免环形图完全空白
+        btcDoughnutChart.data.labels = ['暂无持仓'];
+        btcDoughnutChart.data.datasets[0].data = [1];
+        btcDoughnutChart.data.datasets[0].backgroundColor = ['rgba(255,255,255,0.08)'];
+      }
+      btcDoughnutChart.$centerTotalText = `${totalBtc.toFixed(6)} BTC`;
+      btcDoughnutChart.update();
+    }
+
+    if (usdcBarChart) {
+      usdcBarChart.data.datasets[0].data = [
+        Math.max(0, walletState.a.invested),
+        Math.max(0, walletState.b.invested),
+        Math.max(0, walletState.c.invested)
+      ];
+      usdcBarChart.update();
+    }
+
+    // 同步刷新环形图下方的自定义图例（数量 + 占比）
+    const pct = (v) => (totalBtc > 0 ? ` (${((v / totalBtc) * 100).toFixed(1)}%)` : '');
+    const legendA = document.getElementById('legend-a-value');
+    const legendB = document.getElementById('legend-b-value');
+    const legendC = document.getElementById('legend-c-value');
+    if (legendA) legendA.textContent = `${btcA.toFixed(6)} BTC${pct(btcA)}`;
+    if (legendB) legendB.textContent = `${btcB.toFixed(6)} BTC${pct(btcB)}`;
+    if (legendC) legendC.textContent = `${btcC.toFixed(6)} BTC${pct(btcC)}`;
+  }
+
+  window.refreshAssetCharts = refreshAssetCharts;
+
+  // ============================================================
+  // 数据分析页：全局收益概览 + 钱包横向对比 + 成本走势 + 月度对账
+  // 全部数据来自 transactionRecords / walletState / cache.btcPrice 自动推导，无需手动录入
+  // ============================================================
+  let walletCompareChart = null;
+  let costTrendChart = null;
+  let analyticsSelectedMonth = 'all';
+
+  function computeGlobalAnalytics() {
+    let totalInvested = 0;
+    let totalBtc = 0;
+    let totalInitial = 0;
+    let totalPnl = 0;
+    let hasPnl = false;
+    const currentPrice = cache.btcPrice;
+
+    ['a', 'b', 'c'].forEach((key) => {
+      const w = walletState[key];
+      const invested = round2(Math.max(0, w.invested));
+      const btc = round8(Math.max(0, w.btc));
+      totalInvested += invested;
+      totalBtc += btc;
+      totalInitial += w.initial;
+      if (currentPrice != null && btc > 0) {
+        const avgCost = round2(invested / btc);
+        totalPnl += round2((currentPrice - avgCost) * btc);
+        hasPnl = true;
+      }
+    });
+
+    totalInvested = round2(totalInvested);
+    totalBtc = round8(totalBtc);
+    totalPnl = round2(totalPnl);
+    const totalPnlPct = hasPnl && totalInvested > 0 ? round2((totalPnl / totalInvested) * 100) : null;
+    const fundUsagePct = totalInitial > 0 ? Math.min(100, Math.max(0, (totalInvested / totalInitial) * 100)) : 0;
+
+    return { totalInvested, totalBtc, totalPnl, totalPnlPct, hasPnl, fundUsagePct };
+  }
+
+  function renderAnalyticsSummaryCards() {
+    const g = computeGlobalAnalytics();
+    const elInvested = document.getElementById('an-total-invested');
+    const elBtc = document.getElementById('an-total-btc');
+    const elPnl = document.getElementById('an-total-pnl');
+    const elPnlPct = document.getElementById('an-total-pnl-pct');
+    const elUsage = document.getElementById('an-fund-usage');
+    const elUsageBar = document.getElementById('an-fund-usage-bar');
+    if (!elInvested) return; // 页面尚未渲染（DOM不存在）时直接跳过
+
+    elInvested.textContent = formatUsdc(g.totalInvested);
+    elBtc.textContent = g.totalBtc > 0 ? `${formatBtcNum(g.totalBtc)} BTC` : '-- BTC';
+
+    if (g.hasPnl) {
+      const up = g.totalPnl >= 0;
+      elPnl.textContent = `${up ? '+' : '-'}$${Math.abs(g.totalPnl).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}`;
+      elPnl.className = `font-bold text-xl mt-2 ${up ? 'text-profit' : 'text-loss'}`;
+      const upPct = g.totalPnlPct >= 0;
+      elPnlPct.textContent = `${upPct ? '+' : ''}${g.totalPnlPct.toFixed(2)}%`;
+      elPnlPct.className = `font-bold text-xl mt-2 ${upPct ? 'text-profit' : 'text-loss'}`;
+    } else {
+      elPnl.textContent = '--';
+      elPnl.className = 'font-bold text-xl mt-2 text-textmuted';
+      elPnlPct.textContent = '--';
+      elPnlPct.className = 'font-bold text-xl mt-2 text-textmuted';
+    }
+
+    elUsage.textContent = `${g.fundUsagePct.toFixed(1)}%`;
+    elUsageBar.style.width = `${g.fundUsagePct}%`; // 规则：最大值100%，禁止负值（fundUsagePct已在computeGlobalAnalytics中clamp）
+  }
+
+  function initWalletCompareChart() {
+    const canvas = document.getElementById('wallet-compare-bar');
+    if (!canvas || typeof Chart === 'undefined') return;
+    walletCompareChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: [CHART_LABELS.a, CHART_LABELS.b, CHART_LABELS.c],
+        datasets: [
+          { label: '收益率(%)', data: [0, 0, 0], backgroundColor: '#f59e0b', borderRadius: 4, maxBarThickness: 48 },
+          { label: '资金使用率(%)', data: [0, 0, 0], backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 4, maxBarThickness: 48 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: CHART_MUTED }, grid: { display: false } },
+          y: {
+            ticks: { color: CHART_MUTED, callback: (v) => `${v}%` },
+            grid: { color: CHART_GRID }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: CHART_MUTED } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}：${Number(ctx.parsed.y).toFixed(2)}%` } }
+        }
+      }
+    });
+  }
+
+  function refreshWalletCompareChart() {
+    if (!walletCompareChart) return;
+    const currentPrice = cache.btcPrice;
+    const pnlPcts = [];
+    const usagePcts = [];
+
+    ['a', 'b', 'c'].forEach((key) => {
+      const w = walletState[key];
+      const invested = round2(Math.max(0, w.invested));
+      const btc = round8(Math.max(0, w.btc));
+      let pnlPct = 0;
+      if (currentPrice != null && btc > 0 && invested > 0) {
+        const avgCost = round2(invested / btc);
+        pnlPct = round2(((currentPrice - avgCost) * btc / invested) * 100);
+      }
+      const usagePct = w.totalShares > 0 ? Math.min(100, Math.max(0, (Math.min(w.totalShares, w.usedShares) / w.totalShares) * 100)) : 0;
+      pnlPcts.push(pnlPct);
+      usagePcts.push(round2(usagePct));
+    });
+
+    walletCompareChart.data.datasets[0].data = pnlPcts;
+    walletCompareChart.data.datasets[1].data = usagePcts;
+    walletCompareChart.update();
+  }
+
+  function initCostTrendChart() {
+    const canvas = document.getElementById('cost-trend-line');
+    if (!canvas || typeof Chart === 'undefined') return;
+    costTrendChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: '累计投入USDC',
+            data: [],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245,158,11,0.1)',
+            yAxisID: 'y',
+            tension: 0.2,
+            pointRadius: 2
+          },
+          {
+            label: 'BTC成交价格',
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16,185,129,0.1)',
+            yAxisID: 'y1',
+            tension: 0.2,
+            pointRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { color: CHART_MUTED, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+          y: {
+            position: 'left',
+            ticks: { color: CHART_MUTED, callback: (v) => `$${Number(v).toLocaleString()}` },
+            grid: { color: CHART_GRID },
+            title: { display: true, text: '累计投入USDC', color: CHART_MUTED }
+          },
+          y1: {
+            position: 'right',
+            ticks: { color: CHART_MUTED, callback: (v) => `$${Number(v).toLocaleString()}` },
+            grid: { display: false },
+            title: { display: true, text: 'BTC价格(USD)', color: CHART_MUTED }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: CHART_MUTED } }
+        }
+      }
+    });
+  }
+
+  function refreshCostTrendChart() {
+    if (!costTrendChart) return;
+    const sorted = [...transactionRecords].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    if (!sorted.length) {
+      costTrendChart.data.labels = [];
+      costTrendChart.data.datasets[0].data = [];
+      costTrendChart.data.datasets[1].data = [];
+      costTrendChart.update();
+      return;
+    }
+
+    let cumulative = 0;
+    const labels = [];
+    const cumulativeInvested = [];
+    const priceSeries = [];
+
+    sorted.forEach((r) => {
+      cumulative = round2(cumulative + (Number(r.investedUsdc) || 0));
+      labels.push(formatDisplayTime(r.time).slice(0, 10)); // 仅取日期部分，避免横轴过密
+      cumulativeInvested.push(cumulative);
+      priceSeries.push(Number(r.price) || null);
+    });
+
+    costTrendChart.data.labels = labels;
+    costTrendChart.data.datasets[0].data = cumulativeInvested;
+    costTrendChart.data.datasets[1].data = priceSeries;
+    costTrendChart.update();
+  }
+
+  function computeMonthlyStats() {
+    const map = {};
+    transactionRecords.forEach((r) => {
+      const d = new Date(r.time);
+      if (isNaN(d.getTime())) return;
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map[monthKey]) map[monthKey] = { count: 0, invested: 0, btc: 0 };
+      map[monthKey].count += 1;
+      map[monthKey].invested += Number(r.investedUsdc) || 0;
+      map[monthKey].btc += Number(r.btcAmount) || 0;
+    });
+    return Object.keys(map)
+      .sort((a, b) => (a < b ? 1 : -1)) // 按月份倒序（最近月份在前）
+      .map((month) => {
+        const s = map[month];
+        const invested = round2(s.invested);
+        const btc = round8(s.btc);
+        const avgCost = btc > 0 ? round2(invested / btc) : null;
+        return { month, count: s.count, invested, btc, avgCost };
+      });
+  }
+
+  function formatMonthLabel(m) {
+    const [y, mo] = m.split('-');
+    return `${y}年${mo}月`;
+  }
+
+  function renderMonthlyFilterOptions(stats) {
+    const select = document.getElementById('an-month-filter');
+    if (!select) return;
+    const prevValue = select.value || 'all';
+    select.innerHTML = '<option value="all">全部月份</option>' + stats.map((s) => `<option value="${s.month}">${formatMonthLabel(s.month)}</option>`).join('');
+    // 若之前选中的月份仍然存在则保留选择，否则回退到"全部月份"
+    const stillExists = stats.some((s) => s.month === prevValue);
+    select.value = stillExists ? prevValue : 'all';
+    analyticsSelectedMonth = select.value;
+  }
+
+  function renderMonthlyTable() {
+    const tbody = document.getElementById('an-monthly-tbody');
+    if (!tbody) return;
+    const stats = computeMonthlyStats();
+    renderMonthlyFilterOptions(stats);
+
+    const rows = analyticsSelectedMonth === 'all' ? stats : stats.filter((s) => s.month === analyticsSelectedMonth);
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-textmuted text-sm">暂无交易记录</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows
+      .map((s, i) => {
+        const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
+        return `
+          <tr class="border-b border-white/10 last:border-b-0 ${stripe}">
+            <td class="px-4 py-3 text-white whitespace-nowrap">${formatMonthLabel(s.month)}</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${s.count}次</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatUsd(s.invested)}</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatBtcNum(s.btc)}</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${s.avgCost != null ? formatUsd(s.avgCost) : '--'}</td>
+          </tr>
+        `;
+      })
+      .join('');
+  }
+
+  function renderAnalyticsPage() {
+    renderAnalyticsSummaryCards();
+    if (!walletCompareChart) initWalletCompareChart();
+    refreshWalletCompareChart();
+    if (!costTrendChart) initCostTrendChart();
+    refreshCostTrendChart();
+    renderMonthlyTable();
+  }
+  window.renderAnalyticsPage = renderAnalyticsPage;
+
+  const analyticsMonthFilterEl = document.getElementById('an-month-filter');
+  if (analyticsMonthFilterEl) {
+    analyticsMonthFilterEl.addEventListener('change', (evt) => {
+      analyticsSelectedMonth = evt.target.value;
+      renderMonthlyTable();
+    });
+  }
+
+  // ============================================================
+  // 最新交易记录：表格渲染 + 编辑/删除交互
+  // 默认按时间倒序排列，仅展示最新10条；先用5条模拟数据填充效果
+  // ============================================================
+  const TX_WALLET_META = {
+    a: { label: 'A钱包', dot: 'bg-profit' },
+    b: { label: 'B钱包', dot: 'bg-accent' },
+    c: { label: 'C钱包', dot: 'bg-loss' }
+  };
+
+  // ============================================================
+  // 本地存储持久化：交易记录是全部计算的唯一数据源，
+  // 每次新增/编辑/删除后都会立即写回 localStorage，刷新页面也不丢失；
+  // 读取到损坏/格式异常数据时，经 safeLoadJSON 统一校验后自动回退默认值并提示用户。
+  // ============================================================
+
+  // 默认模拟数据，仅在本地存储中没有任何数据时（首次访问）使用一次
+  const DEFAULT_TRANSACTION_RECORDS = [
+    { id: 'tx-1', time: '2026-07-04T09:12:03', operator: '碎', wallet: 'a', investedUsdc: 500, btcAmount: round8(500 / 67089.32), price: 67089.32, triggerTier: '定期', withdrawStatus: '已到账', withdrawHash: '3a7f9c2e1b6d4f8a0c5e7b9d2f4a6c8e1b3d5f7a', note: '每月定投' },
+    { id: 'tx-2', time: '2026-07-03T21:05:40', operator: '锋', wallet: 'b', investedUsdc: 800, btcAmount: round8(800 / 67114.09), price: 67114.09, triggerTier: '第一档', withdrawStatus: '提币中', withdrawHash: '', note: '恐慌指数触发' },
+    { id: 'tx-3', time: '2026-07-03T14:47:18', operator: '叨', wallet: 'c', investedUsdc: 1200, btcAmount: round8(1200 / 67104.55), price: 67104.55, triggerTier: '第二档', withdrawStatus: '未提币', withdrawHash: '', note: 'MVRV低估触发' },
+    { id: 'tx-4', time: '2026-07-02T10:30:55', operator: '碎', wallet: 'a', investedUsdc: 500, btcAmount: round8(500 / 66500.02), price: 66500.02, triggerTier: '定期', withdrawStatus: '已到账', withdrawHash: '9d1e3c5a7f2b4d6e8c0a2f4b6d8e0c2a4f6b8d0e', note: '' },
+    { id: 'tx-5', time: '2026-07-01T08:15:22', operator: '锋', wallet: 'b', investedUsdc: 800, btcAmount: round8(800 / 66367.34), price: 66367.34, triggerTier: '手动', withdrawStatus: '未提币', withdrawHash: '', note: '' }
+  ];
+
+  function saveTransactionsToStorage() {
+    safeSaveJSON(STORAGE_KEYS.TRANSACTIONS, transactionRecords);
+  }
+
+  let transactionRecords = safeLoadJSON(
+    STORAGE_KEYS.TRANSACTIONS,
+    validateTransactionRecords,
+    DEFAULT_TRANSACTION_RECORDS,
+    '交易记录'
+  );
+
+  // 字段归一化：旧数据可能没有 触发档位/提币状态/提币哈希/备注 这几个新字段，统一补齐默认值
+  function normalizeRecord(r) {
+    return Object.assign(
+      { triggerTier: '--', withdrawStatus: '未提币', withdrawHash: '', note: '' },
+      r
+    );
+  }
+  transactionRecords = transactionRecords.map(normalizeRecord);
+
+  // 首次访问（或异常重置后）立即落盘，确保下一次访问能从本地存储正常读取
+  saveTransactionsToStorage();
+
+
+  function formatUsd(v) {
+    const d = APP_SETTINGS.usdcDecimals;
+    return `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+  }
+
+  function formatDisplayTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  /**
+   * 表格渲染函数（预留给真实数据源调用）：
+   *   window.renderTransactionRecords(realRecordsArray)
+   * 每条记录字段：{ id, time, operator, wallet: 'a'|'b'|'c', investedUsdc, btcAmount, price }
+   * 内部自动按时间倒序排序并只取最新10条渲染。
+   */
+  function renderTransactionTable(records) {
+    const tbody = document.getElementById('transaction-tbody');
+    if (!tbody) return;
+
+    const sorted = [...(records || [])].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
+
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-textmuted text-sm">暂无交易记录</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = sorted
+      .map((r, i) => {
+        const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-gray-500' };
+        const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
+        return `
+          <tr class="border-b border-white/10 last:border-b-0 ${stripe} hover:bg-black/30 transition-colors">
+            <td class="px-4 py-3 text-white whitespace-nowrap">${formatDisplayTime(r.time)}</td>
+            <td class="px-4 py-3 text-white whitespace-nowrap">${r.operator}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full ${meta.dot} shrink-0"></span>
+                <span class="text-white">${meta.label}</span>
+              </span>
+            </td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatUsd(r.investedUsdc)}</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatBtcNum(r.btcAmount)}</td>
+            <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatUsd(r.price)}</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-center gap-3">
+                <button type="button" onclick="window.editTransactionRecord('${r.id}')" class="text-textmuted hover:text-white transition-colors" aria-label="编辑">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button type="button" onclick="window.deleteTransactionRecord('${r.id}')" class="text-textmuted hover:text-loss transition-colors" aria-label="删除">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+  }
+
+  /**
+   * 全页面联动刷新入口：交易记录发生任何新增/编辑/删除后，
+   * 必须且只需调用这一个函数，即可完成：
+   *   重新聚合钱包数据 → 刷新交易表格 → 刷新钱包卡片 →
+   *   刷新饼图/柱状图 → 刷新全局汇总 → 写入本地存储
+   */
+  function refreshAll() {
+    recomputeWalletsFromTransactions();
+    renderTransactionTable(transactionRecords);
+    if (typeof renderFullTransactionsPage === 'function') renderFullTransactionsPage();
+    renderWallets(); // 内部会联动 refreshAssetCharts() 与 renderGlobalSummary()
+    saveTransactionsToStorage();
+    if (typeof updateQuickTierHint === 'function') updateQuickTierHint(); // 联动刷新快速记录表单的档位/剩余额度提示
+  }
+
+  function genTxId() {
+    return `tx-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  }
+
+  /**
+   * 新增交易记录（规则②：买入BTC数量 = 投入USDC ÷ 成交价格，保留8位小数）
+   * 供侧边栏"快速记录"表单调用。
+   */
+  function addTransactionRecord({ operator, wallet, investedUsdc, price }) {
+    const invested = round2(Number(investedUsdc));
+    const p = Number(price);
+    if (!operator || !wallet || !Number.isFinite(invested) || invested <= 0 || !Number.isFinite(p) || p <= 0) {
+      const message = '请填写有效的投入金额与成交价格（须大于0）';
+      showToast(message);
+      return { ok: false, message };
+    }
+
+    // 规则③④⑤：资金兜底 / 份数上下限 / 固定日顺延，全部统一在此校验，任何一项不通过都拒绝提交
+    const validation = validateNewTransaction(wallet, invested);
+    if (!validation.ok) {
+      showToast(validation.message); // 规则⑥：所有校验提示均使用轻量Toast，不阻断页面运行
+      return { ok: false, message: validation.message };
+    }
+
+    const btcAmount = round8(invested / p);
+    transactionRecords.push({
+      id: genTxId(),
+      time: new Date().toISOString(),
+      operator,
+      wallet,
+      investedUsdc: invested,
+      btcAmount,
+      price: round2(p),
+      triggerTier: validation.tierCode,
+      withdrawStatus: '未提币',
+      withdrawHash: '',
+      note: validation.tierCode === '收尾买入' ? '资金兜底：全额收尾买入' : (validation.tierCode === '补操作' ? '27日未操作，顺延至28日' : '')
+    });
+    refreshAll();
+    if (validation.tierCode === '收尾买入' || validation.tierCode === '补操作') {
+      showToast(`已按「${validation.tierCode}」规则记录本次买入`);
+    }
+    return { ok: true };
+  }
+
+  // 编辑：打开编辑弹窗，保存后按规则②重新计算BTC数量并触发全页面联动刷新
+  let editingId = null;
+  function editTransactionRecord(id) {
+    const record = transactionRecords.find((r) => r.id === id);
+    if (!record) return;
+    editingId = id;
+    document.getElementById('edit-operator').value = record.operator;
+    document.getElementById('edit-wallet').value = record.wallet;
+    document.getElementById('edit-invested').value = record.investedUsdc;
+    document.getElementById('edit-price').value = record.price;
+    document.getElementById('edit-trigger-tier').value = record.triggerTier || '--';
+    document.getElementById('edit-withdraw-status').value = record.withdrawStatus || '未提币';
+    document.getElementById('edit-withdraw-hash').value = record.withdrawHash || '';
+    document.getElementById('edit-note').value = record.note || '';
+    updateEditBtcPreview();
+    const errEl = document.getElementById('edit-record-error');
+    errEl.classList.add('hidden');
+    errEl.textContent = '';
+    const modal = document.getElementById('edit-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeEditModal() {
+    editingId = null;
+    const modal = document.getElementById('edit-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function updateEditBtcPreview() {
+    const invested = parseFloat(document.getElementById('edit-invested').value);
+    const price = parseFloat(document.getElementById('edit-price').value);
+    const preview = document.getElementById('edit-btc-preview');
+    if (Number.isFinite(invested) && Number.isFinite(price) && price > 0) {
+      preview.textContent = formatBtcNum(round8(invested / price));
+    } else {
+      preview.textContent = '0.00000000';
+    }
+  }
+
+  function saveEditModal() {
+    if (!editingId) return;
+    const record = transactionRecords.find((r) => r.id === editingId);
+    if (!record) return;
+    const operator = document.getElementById('edit-operator').value;
+    const wallet = document.getElementById('edit-wallet').value;
+    const invested = round2(parseFloat(document.getElementById('edit-invested').value));
+    const price = parseFloat(document.getElementById('edit-price').value);
+    const selectedTier = document.getElementById('edit-trigger-tier').value;
+    const errEl = document.getElementById('edit-record-error');
+
+    if (!Number.isFinite(invested) || invested <= 0 || !Number.isFinite(price) || price <= 0) {
+      const message = '请输入有效的投入金额与成交价格（须大于0）';
+      errEl.textContent = message;
+      errEl.classList.remove('hidden');
+      showToast(message);
+      return;
+    }
+
+    // 规则③④⑤：与新增记录共用同一套资金兜底 / 份数上下限校验逻辑（排除自身占用的额度）
+    const validation = validateEditedTransaction(editingId, wallet, invested, selectedTier);
+    if (!validation.ok) {
+      errEl.textContent = validation.message;
+      errEl.classList.remove('hidden');
+      showToast(validation.message); // 规则⑥：Toast提示，不阻断页面，仅阻止本次保存
+      return;
+    }
+
+    record.operator = operator;
+    record.wallet = wallet;
+    record.investedUsdc = invested;
+    record.price = round2(price);
+    record.btcAmount = round8(invested / price); // 规则②：编辑后重新计算BTC数量
+    record.triggerTier = validation.tierCode; // 资金兜底命中时会被自动改写为「收尾买入」
+    record.withdrawStatus = document.getElementById('edit-withdraw-status').value;
+    record.withdrawHash = document.getElementById('edit-withdraw-hash').value.trim();
+    record.note = document.getElementById('edit-note').value.trim();
+
+    closeEditModal();
+    refreshAll();
+    if (validation.tierCode === '收尾买入' && selectedTier !== '收尾买入') {
+      showToast('剩余资金不足1份，已自动标记为「收尾买入」');
+    }
+  }
+
+  // 删除：从当前记录集中移除，并触发全页面联动刷新
+  function deleteTransactionRecord(id) {
+    if (!window.confirm('确认删除这条交易记录吗？删除后钱包数据将自动重新计算。')) return;
+    transactionRecords = transactionRecords.filter((r) => r.id !== id);
+    refreshAll();
+  }
+
+  /**
+   * 对外数据接口④：真实交易记录整体刷新（后续接入真实数据源时调用）
+   *   window.renderTransactionRecords([{ id, time, operator, wallet, investedUsdc, btcAmount, price }, ...])
+   */
+  function setTransactionRecords(records) {
+    transactionRecords = Array.isArray(records) ? records : [];
+    refreshAll();
+  }
+
+  window.addTransactionRecord = addTransactionRecord;
+  window.editTransactionRecord = editTransactionRecord;
+  window.deleteTransactionRecord = deleteTransactionRecord;
+  window.renderTransactionRecords = setTransactionRecords;
+
+  // ============================================================
+  // 左侧导航页面切换：总览看板 / 交易记录 / 钱包管理 / 数据分析 / 系统设置
+  // ============================================================
+  const PAGE_KEYS = ['overview', 'transactions', 'wallets', 'analytics', 'settings'];
+
+  function switchPage(pageKey) {
+    PAGE_KEYS.forEach((p) => {
+      const el = document.getElementById(`page-${p}`);
+      if (el) el.classList.toggle('hidden', p !== pageKey);
+    });
+    document.querySelectorAll('.nav-item').forEach((a) => {
+      const isActive = a.dataset.page === pageKey;
+      a.classList.toggle('bg-accent', isActive);
+      a.classList.toggle('text-white', isActive);
+      a.classList.toggle('text-textmuted', !isActive);
+    });
+    if (pageKey === 'transactions') {
+      txCurrentPage = 1;
+      renderFullTransactionsPage();
+    }
+    if (pageKey === 'wallets') {
+      renderWalletManagementPage();
+    }
+    if (pageKey === 'analytics') {
+      renderAnalyticsPage();
+      // Chart.js 在隐藏容器(display:none)中无法正确计算尺寸，切换到该页可见后需要手动触发一次resize
+      if (walletCompareChart) walletCompareChart.resize();
+      if (costTrendChart) costTrendChart.resize();
+    }
+  }
+
+  document.querySelectorAll('.nav-item').forEach((a) => {
+    a.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      switchPage(a.dataset.page);
+    });
+  });
+
+  // ============================================================
+  // 交易记录完整页面：筛选（钱包/操作人/时间范围）+ 分页（每页20条）+ 导出CSV
+  // ============================================================
+  const TX_PAGE_SIZE = 20;
+  let txCurrentPage = 1;
+
+  const WITHDRAW_STATUS_STYLE = {
+    未提币: 'bg-gray-500',
+    提币中: 'bg-accent',
+    已到账: 'bg-profit'
+  };
+
+  function getFilteredTransactions() {
+    const walletFilter = document.getElementById('tx-filter-wallet').value;
+    const operatorFilter = document.getElementById('tx-filter-operator').value;
+    const startVal = document.getElementById('tx-filter-start').value;
+    const endVal = document.getElementById('tx-filter-end').value;
+    const startTime = startVal ? new Date(`${startVal}T00:00:00`).getTime() : null;
+    const endTime = endVal ? new Date(`${endVal}T23:59:59`).getTime() : null;
+
+    return transactionRecords
+      .filter((r) => {
+        if (walletFilter !== 'all' && r.wallet !== walletFilter) return false;
+        if (operatorFilter !== 'all' && r.operator !== operatorFilter) return false;
+        const t = new Date(r.time).getTime();
+        if (startTime != null && t < startTime) return false;
+        if (endTime != null && t > endTime) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.time) - new Date(a.time));
+  }
+
+  function renderFullTransactionsPage() {
+    const tbody = document.getElementById('tx-full-tbody');
+    if (!tbody) return;
+
+    const filtered = getFilteredTransactions();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / TX_PAGE_SIZE));
+    if (txCurrentPage > totalPages) txCurrentPage = totalPages;
+    if (txCurrentPage < 1) txCurrentPage = 1;
+
+    const startIdx = (txCurrentPage - 1) * TX_PAGE_SIZE;
+    const pageItems = filtered.slice(startIdx, startIdx + TX_PAGE_SIZE);
+
+    if (!pageItems.length) {
+      tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-6 text-center text-textmuted text-sm">暂无符合条件的交易记录</td></tr>`;
+    } else {
+      tbody.innerHTML = pageItems
+        .map((r, i) => {
+          const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-gray-500' };
+          const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
+          const statusClass = WITHDRAW_STATUS_STYLE[r.withdrawStatus] || 'bg-gray-500';
+          const hashDisplay = r.withdrawHash ? `${r.withdrawHash.slice(0, 6)}...${r.withdrawHash.slice(-4)}` : '--';
+          return `
+            <tr class="border-b border-white/10 last:border-b-0 ${stripe} hover:bg-black/30 transition-colors">
+              <td class="px-4 py-3 text-white whitespace-nowrap">${formatDisplayTime(r.time)}</td>
+              <td class="px-4 py-3 text-white whitespace-nowrap">${r.operator}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="inline-flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full ${meta.dot} shrink-0"></span>
+                  <span class="text-white">${meta.label}</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 text-textmuted whitespace-nowrap">${r.triggerTier || '--'}</td>
+              <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatUsd(r.investedUsdc)}</td>
+              <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatBtcNum(r.btcAmount)}</td>
+              <td class="px-4 py-3 text-white text-right whitespace-nowrap">${formatUsd(r.price)}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="${statusClass} text-white text-xs font-medium rounded-full px-2.5 py-1">${r.withdrawStatus || '未提币'}</span>
+              </td>
+              <td class="px-4 py-3 text-textmuted whitespace-nowrap font-mono text-xs" title="${r.withdrawHash || ''}">${hashDisplay}</td>
+              <td class="px-4 py-3 text-textmuted whitespace-nowrap max-w-[160px] truncate" title="${r.note || ''}">${r.note || '--'}</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-center gap-3">
+                  <button type="button" onclick="window.editTransactionRecord('${r.id}')" class="text-textmuted hover:text-white transition-colors" aria-label="编辑">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                  </button>
+                  <button type="button" onclick="window.deleteTransactionRecord('${r.id}')" class="text-textmuted hover:text-loss transition-colors" aria-label="删除">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    document.getElementById('tx-page-info').textContent = `共${filtered.length}条记录`;
+    document.getElementById('tx-page-current').textContent = `${txCurrentPage}/${totalPages}`;
+    document.getElementById('tx-prev-page').disabled = txCurrentPage <= 1;
+    document.getElementById('tx-next-page').disabled = txCurrentPage >= totalPages;
+  }
+  window.renderFullTransactionsPage = renderFullTransactionsPage;
+
+  // ---- 筛选栏交互 ----
+  ['tx-filter-wallet', 'tx-filter-operator', 'tx-filter-start', 'tx-filter-end'].forEach((id) => {
+    document.getElementById(id).addEventListener('change', () => {
+      txCurrentPage = 1;
+      renderFullTransactionsPage();
+    });
+  });
+  document.getElementById('tx-filter-reset').addEventListener('click', () => {
+    document.getElementById('tx-filter-wallet').value = 'all';
+    document.getElementById('tx-filter-operator').value = 'all';
+    document.getElementById('tx-filter-start').value = '';
+    document.getElementById('tx-filter-end').value = '';
+    txCurrentPage = 1;
+    renderFullTransactionsPage();
+  });
+
+  // ---- 分页交互 ----
+  document.getElementById('tx-prev-page').addEventListener('click', () => {
+    if (txCurrentPage > 1) {
+      txCurrentPage -= 1;
+      renderFullTransactionsPage();
+    }
+  });
+  document.getElementById('tx-next-page').addEventListener('click', () => {
+    txCurrentPage += 1;
+    renderFullTransactionsPage();
+  });
+
+  // ---- 导出CSV（导出当前筛选条件下的全部记录，不受分页限制；文件名带日期） ----
+  function escapeCsvField(v) {
+    const s = String(v ?? '');
+    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  }
+
+  function exportTransactionsToCsv() {
+    const rows = getFilteredTransactions();
+    const walletLabel = { a: 'A钱包', b: 'B钱包', c: 'C钱包' };
+    const header = ['时间', '操作者', '钱包', '触发档位', '投入USDC', '买入BTC', '成交价格', '提币状态', '提币哈希', '备注'];
+    const lines = [header.join(',')];
+    rows.forEach((r) => {
+      lines.push(
+        [
+          formatDisplayTime(r.time),
+          r.operator,
+          walletLabel[r.wallet] || r.wallet,
+          r.triggerTier || '--',
+          r.investedUsdc,
+          Number(r.btcAmount).toFixed(8),
+          r.price,
+          r.withdrawStatus || '未提币',
+          r.withdrawHash || '',
+          r.note || ''
+        ]
+          .map(escapeCsvField)
+          .join(',')
+      );
+    });
+    const csvContent = `\uFEFF${lines.join('\r\n')}`; // 加BOM前缀，避免Excel打开中文乱码
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    a.href = url;
+    a.download = `交易记录_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  const csvExportBtn = document.getElementById('tx-export-csv');
+  csvExportBtn.addEventListener('click', () => {
+    if (csvExportBtn.disabled) return; // 防重复提交
+    csvExportBtn.disabled = true;
+    csvExportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    setTimeout(() => {
+      exportTransactionsToCsv();
+      csvExportBtn.disabled = false;
+      csvExportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }, 300);
+  });
+
+  // ---- 编辑弹窗按钮与实时BTC预览绑定 ----
+  document.getElementById('edit-invested').addEventListener('input', updateEditBtcPreview);
+  document.getElementById('edit-price').addEventListener('input', updateEditBtcPreview);
+  document.getElementById('edit-cancel-btn').addEventListener('click', closeEditModal);
+  const editSaveBtn = document.getElementById('edit-save-btn');
+  editSaveBtn.addEventListener('click', function () {
+    if (editSaveBtn.disabled) return; // 防重复提交：处理中禁止再次点击
+    editSaveBtn.disabled = true;
+    editSaveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    setTimeout(() => {
+      saveEditModal();
+      editSaveBtn.disabled = false;
+      editSaveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }, 300);
+  });
+
+  // ---- 侧边栏"快速记录"表单：实时BTC预览 + 提交新增交易 ----
+  const quickInvestedEl = document.getElementById('quick-invested');
+  const quickPriceEl = document.getElementById('quick-price');
+  const quickBtcPreviewEl = document.getElementById('quick-btc-preview');
+  const quickErrorEl = document.getElementById('quick-record-error');
+
+  const quickWalletEl = document.getElementById('quick-wallet');
+  const quickTierHintEl = document.getElementById('quick-tier-hint');
+
+  function updateQuickBtcPreview() {
+    const invested = parseFloat(quickInvestedEl.value);
+    const price = parseFloat(quickPriceEl.value);
+    if (Number.isFinite(invested) && Number.isFinite(price) && price > 0) {
+      quickBtcPreviewEl.textContent = formatBtcNum(round8(invested / price));
+    } else {
+      quickBtcPreviewEl.textContent = '0.00000000';
+    }
+    updateQuickTierHint();
+  }
+
+  // 提交前的实时提示（规则③④⑤的可视化预告）：当前命中档位、允许的份数区间、
+  // 本次投入折算的份数，以及剩余资金不足1份时的"收尾买入"提示——帮助用户在点击提交前就发现问题。
+  function updateQuickTierHint() {
+    if (!quickTierHintEl || !quickWalletEl) return;
+    const wallet = quickWalletEl.value;
+    const invested = parseFloat(quickInvestedEl.value);
+    const share = perShareAmount(wallet);
+    const remaining = computeRemainingExcluding(wallet, null);
+    const tierInfo = resolveTriggerTier(wallet);
+
+    const parts = [];
+    parts.push(`剩余可投：${formatUsdc(remaining)}`);
+
+    if (Number.isFinite(invested) && invested > 0 && share > 0) {
+      const shares = invested / share;
+      parts.push(`本次约${shares.toFixed(2)}份`);
+    }
+
+    if (remaining > 0 && remaining < share) {
+      parts.push(`剩余不足1份，可全额收尾买入 ${formatUsdc(remaining)}`);
+    } else if (tierInfo) {
+      parts.push(`当前档位「${tierInfo.tier}」允许 ${tierInfo.min}~${tierInfo.max} 份`);
+    } else {
+      parts.push('当前无命中档位，按"手动"记录，不设份数上下限');
+    }
+
+    quickTierHintEl.textContent = parts.join('　·　');
+  }
+
+  quickWalletEl.addEventListener('change', updateQuickTierHint);
+  quickInvestedEl.addEventListener('input', updateQuickBtcPreview);
+  quickPriceEl.addEventListener('input', updateQuickBtcPreview);
+
+  const quickSubmitBtn = document.querySelector('#quick-record-form button[type="submit"]');
+
+  document.getElementById('quick-record-form').addEventListener('submit', function (evt) {
+    evt.preventDefault();
+    if (quickSubmitBtn.disabled) return; // 防重复提交：处理中禁止再次点击
+    quickSubmitBtn.disabled = true;
+    quickSubmitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    setTimeout(() => {
+      const result = addTransactionRecord({
+        operator: document.getElementById('quick-operator').value,
+        wallet: document.getElementById('quick-wallet').value,
+        investedUsdc: quickInvestedEl.value,
+        price: quickPriceEl.value
+      });
+      if (!result.ok) {
+        quickErrorEl.textContent = result.message;
+        quickErrorEl.classList.remove('hidden');
+      } else {
+        quickErrorEl.classList.add('hidden');
+        evt.target.reset();
+        quickBtcPreviewEl.textContent = '0.00000000';
+        updateQuickTierHint(); // 提交成功后剩余资金变化，刷新提示
+      }
+      quickSubmitBtn.disabled = false;
+      quickSubmitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }, 300);
+  });
+
+  updateQuickTierHint(); // 页面加载时先渲染一次初始提示（此时交易记录已从本地存储加载完毕）
+
+  const FNG_ARC_LENGTH = 125.6; // 半圆弧长 ≈ π × r（r = 40）
+
+  function formatTime(date) {
+    const d = date || new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  // 状态指示灯：success=绿色同步成功，refreshing=黄色刷新中，error=红色获取失败
+  function setStatus(status) {
+    const map = {
+      success: { color: 'bg-profit', text: '数据同步中' },
+      refreshing: { color: 'bg-yellow-400', text: '刷新中' },
+      error: { color: 'bg-loss', text: '数据更新失败，使用缓存数据' }
+    };
+    const conf = map[status] || map.refreshing;
+    els.statusDot.className = `w-2.5 h-2.5 rounded-full ${conf.color}`;
+    els.statusText.textContent = conf.text;
+  }
+
+  // 迷你折线图渲染：将数值数组按比例映射到 SVG polyline 上，并根据涨跌趋势上色
+  function renderSparkline(svgEl, data, colorUp, colorDown) {
+    if (!data || data.length < 2) return;
+    const w = 80, h = 30, pad = 2;
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = (max - min) || 1;
+    const points = data
+      .map((v, i) => {
+        const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((v - min) / range) * (h - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    svgEl.setAttribute('points', points);
+    const trendUp = data[data.length - 1] >= data[0];
+    svgEl.setAttribute('stroke', trendUp ? (colorUp || '#10b981') : (colorDown || '#ef4444'));
+  }
+
+  // 显示设置："是否显示迷你走势图" 开关：控制行情看板3个迷你折线图的显示/隐藏
+  function applySparklineVisibility() {
+    const ids = ['btc-price-spark-svg', 'mvrv-spark-svg', 'change24h-spark-svg'];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', !APP_SETTINGS.showSparklines);
+    });
+  }
+
+  // 恐惧贪婪指数半圆仪表盘：0-25红 26-50橙 51-75黄 76-100绿
+  function renderFngGauge(value) {
+    let color = '#ef4444';
+    if (value > 75) color = '#10b981';
+    else if (value > 50) color = '#eab308';
+    else if (value > 25) color = '#f59e0b';
+    const offset = FNG_ARC_LENGTH * (1 - value / 100);
+    els.fngArc.setAttribute('stroke', color);
+    els.fngArc.setAttribute('stroke-dashoffset', offset.toFixed(1));
+  }
+
+  function fngLabelFor(value) {
+    if (value <= 25) return '极度恐惧';
+    if (value <= 50) return '恐惧';
+    if (value <= 75) return '贪婪';
+    return '极度贪婪';
+  }
+
+  /**
+   * 统一数据更新函数（对外接口）
+   * 传入部分或全部字段即可，未包含的字段保留缓存旧值：
+   *   updateMarketData({ btcPrice, btcChangePct, btcSpark, fng, mvrv, mvrvSpark, mvrvConfigured, change24hAmount, change24hPct, change24hSpark, status })
+   * status 可选：'success' | 'error'，默认 'success'
+   * 整体失败时调用：updateMarketData({ error: true })  —— 保留缓存数值，状态灯标红并提示"数据获取失败，使用缓存"
+   */
+  function updateMarketData(data) {
+    if (!data || data.error) {
+      setStatus('error');
+      renderFromCache();
+      return;
+    }
+    Object.keys(data).forEach((k) => {
+      if (k !== 'status' && data[k] !== undefined) cache[k] = data[k];
+    });
+    saveMarketCacheToStorage(); // 规则：接口更新成功后立即写入本地缓存
+    renderFromCache();
+    const status = data.status || 'success';
+    setStatus(status);
+    if (status !== 'error') {
+      els.lastUpdate.textContent = formatTime();
+    }
+  }
+
+  function renderFromCache() {
+    // BTC 价格
+    els.btcPriceValue.textContent =
+      cache.btcPrice != null ? `$${cache.btcPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '$--';
+    if (cache.btcChangePct != null) {
+      const up = cache.btcChangePct >= 0;
+      els.btcPriceChange.textContent = `${up ? '+' : ''}${cache.btcChangePct.toFixed(2)}%`;
+      els.btcPriceChange.className = `text-sm font-medium ${up ? 'text-profit' : 'text-loss'}`;
+    }
+    renderSparkline(els.btcPriceSpark, cache.btcSpark);
+
+    // 恐惧贪婪指数
+    if (cache.fng != null) {
+      els.fngValue.textContent = cache.fng;
+      els.fngLabel.textContent = fngLabelFor(cache.fng);
+      els.fngCaption.textContent = `市场情绪：${fngLabelFor(cache.fng)}`;
+      renderFngGauge(cache.fng);
+    }
+
+    // MVRV Z-Score（链上派生指标，需配置真实数据源的 API Key，见下方 CONFIG）
+    if (!cache.mvrvConfigured) {
+      els.mvrvValue.textContent = '--';
+      els.mvrvCaption.textContent = '市场状态：需配置 API Key';
+    } else if (cache.mvrv != null) {
+      els.mvrvValue.textContent = cache.mvrv.toFixed(2);
+      els.mvrvCaption.textContent = `市场状态：${cache.mvrv > 7 ? '高估区间' : cache.mvrv < 0 ? '低估区间' : '合理区间'}`;
+    }
+    renderSparkline(els.mvrvSpark, cache.mvrvSpark, '#f59e0b', '#f59e0b');
+
+    // BTC 24h 涨跌
+    if (cache.change24hAmount != null) {
+      const up = cache.change24hAmount >= 0;
+      els.change24hValue.textContent = `${up ? '+' : ''}$${Math.abs(cache.change24hAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+      els.change24hValue.className = `font-bold text-2xl mt-2 ${up ? 'text-profit' : 'text-loss'}`;
+      els.change24hCaption.textContent = `涨跌幅：${up ? '+' : ''}${cache.change24hPct.toFixed(2)}%`;
+    }
+    renderSparkline(els.change24hSpark, cache.change24hSpark);
+
+    renderStrategySignals();
+    renderWallets();
+  }
+
+  // ============================================================
+  // 策略信号自动判定（每次行情数据更新后自动重新计算）
+  // 规则①：等于阈值不触发，仅小于阈值触发；档位互斥不叠加，始终取当前所处最高档位。
+  // 建议买入份数/USDC金额与校验规则共用同一份 STRATEGY_RULE_TABLE（在下方"策略规则"区块定义），
+  // 避免信号卡片文案与实际校验口径不一致。由于 STRATEGY_RULE_TABLE / findRule / resolveTriggerTier /
+  // maybeNotifyTier 在脚本靠后位置统一定义，这里的函数体只在调用时才执行，不受声明顺序影响。
+  // ============================================================
+  function buildSuggestion(walletKey, tierInfo) {
+    if (!tierInfo) return '建议操作：暂无操作信号';
+    const share = perShareAmount(walletKey);
+    const usdc = round2(tierInfo.suggested * share);
+    return `建议操作：买入${tierInfo.suggested}份，约${formatUsdc(usdc)}`;
+  }
+
+  function setSignalTag(el, text, tone) {
+    // tone: 'triggered-orange' | 'triggered-red' | 'idle'
+    const toneClass =
+      tone === 'triggered-orange' ? 'bg-accent' : tone === 'triggered-red' ? 'bg-loss' : 'bg-gray-500';
+    el.textContent = text;
+    el.className = `${toneClass} text-white text-xs font-medium rounded-full px-3 py-1`;
+  }
+
+  function renderStrategySignals() {
+    // ---- A钱包：固定周期定投，27日为"定期"，27日未操作则28日顺延为"补操作" ----
+    const tierA = resolveTriggerTier('a');
+    if (tierA) {
+      const label = tierA.tier === '补操作' ? '补操作（顺延）' : '待执行';
+      setSignalTag(els.signalAStatus, label, 'triggered-orange');
+      els.signalACaption.textContent =
+        tierA.tier === '补操作' ? '今日为27日顺延补操作日' : '今日为固定定投日：27号';
+      els.signalASuggestion.textContent = buildSuggestion('a', tierA);
+      maybeNotifyTier('a', tierA); // 规则②：同一天只提示一次
+    } else {
+      setSignalTag(els.signalAStatus, '观望', 'idle');
+      els.signalACaption.textContent = '下次定投日：每月27号';
+      els.signalASuggestion.textContent = '建议操作：非定投日，无需操作';
+    }
+
+    // ---- B钱包：情绪定投，按恐慌贪婪指数分档 ----
+    els.signalBCaption.textContent = `当前恐慌指数：${cache.fng != null ? cache.fng : '--'}`;
+    const tierB = resolveTriggerTier('b');
+    if (cache.fng == null) {
+      setSignalTag(els.signalBStatus, '观望', 'idle');
+      els.signalBSuggestion.textContent = '建议操作：等待数据';
+    } else if (tierB) {
+      setSignalTag(els.signalBStatus, '强烈买入', 'triggered-orange');
+      els.signalBSuggestion.textContent = buildSuggestion('b', tierB);
+      maybeNotifyTier('b', tierB); // 规则②：同一天只提示一次
+    } else {
+      setSignalTag(els.signalBStatus, '观望', 'idle');
+      els.signalBSuggestion.textContent = '建议操作：暂无操作信号';
+    }
+
+    // ---- C钱包：估值定投，按 MVRV Z-Score 分档（需已配置真实数据源） ----
+    if (!cache.mvrvConfigured) {
+      els.signalCCaption.textContent = '当前MVRV状态：需配置 API Key';
+      setSignalTag(els.signalCStatus, '观望', 'idle');
+      els.signalCSuggestion.textContent = '建议操作：等待数据源配置';
+    } else {
+      els.signalCCaption.textContent = `当前MVRV状态：${cache.mvrv != null ? cache.mvrv.toFixed(2) : '--'}`;
+      const tierC = resolveTriggerTier('c');
+      if (cache.mvrv == null) {
+        setSignalTag(els.signalCStatus, '观望', 'idle');
+        els.signalCSuggestion.textContent = '建议操作：等待数据';
+      } else if (tierC) {
+        setSignalTag(els.signalCStatus, '强烈买入', 'triggered-red');
+        els.signalCSuggestion.textContent = buildSuggestion('c', tierC);
+        maybeNotifyTier('c', tierC); // 规则②：同一天只提示一次
+      } else {
+        setSignalTag(els.signalCStatus, '观望', 'idle');
+        els.signalCSuggestion.textContent = '建议操作：暂无操作信号';
+      }
+    }
+  }
+
+  // 挂到全局，方便手动/外部调用（例如接入 WebSocket 推送时直接调用它写入界面）
+  window.updateMarketData = updateMarketData;
+
+  // ============================================================
+  // 真实数据源配置
+  // ============================================================
+  const CONFIG = {
+    // MVRV Z-Score 是链上派生指标（市值与已实现市值的标准差偏离），
+    // 本身就是按天更新的链上统计值，并非逐秒变化的行情数据。
+    // 目前没有真正免费且无需注册的公开接口可以拿到它——
+    // Glassnode / CryptoQuant / BGeometrics(bitcoin-data.com) 等正规数据源
+    // 都需要先免费注册换取 API Key（BGeometrics 免费额度为 10次/小时、15次/天）。
+    // 请前往 https://portal.bitcoin-data.com/signup 注册免费账号后填入下方，
+    // 注册后登录 https://api.bgeometrics.com/scalar.html 查看你账号可访问的
+    // 具体 endpoint 路径（MVRV Z-Score 的路径需以你登录后看到的实际文档为准，
+    // 官方公开示例格式为：GET https://api.bgeometrics.com/v1/mvrv?token=YOUR_TOKEN
+    // 或改用请求头 Authorization: Bearer YOUR_TOKEN，二者选其一）。
+    // 留空时，该卡片会显示"需配置 API Key"，不影响 BTC 价格和恐惧贪婪指数正常工作。
+    MVRV_API_KEY: '',
+    MVRV_API_ENDPOINT: 'https://api.bgeometrics.com/v1/mvrv-zscore'
+  };
+
+  // ---- BTC 实时价格：依次尝试多个免费公共数据源，任一数据源被限流/墙掉都会自动切换到下一个 ----
+
+  // 数据源1：Binance 公共行情接口（交易所真实成交价，免费、无需Key、限额宽松、支持CORS）
+  async function fetchBtcPriceFromBinance() {
+    const tickerRes = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+    if (!tickerRes.ok) throw new Error(`Binance ticker HTTP ${tickerRes.status}`);
+    const ticker = await tickerRes.json();
+
+    const klineRes = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=24');
+    if (!klineRes.ok) throw new Error(`Binance klines HTTP ${klineRes.status}`);
+    const klines = await klineRes.json();
+
+    return {
+      price: parseFloat(ticker.lastPrice),
+      changePct: parseFloat(ticker.priceChangePercent),
+      changeAmount: parseFloat(ticker.priceChange),
+      spark: klines.map((k) => parseFloat(k[4])) // 每小时收盘价
+    };
+  }
+
+  // 数据源2：CoinGecko 公共接口（免费、无需Key，但共享IP限流较严格，约5~15次/分钟）
+  async function fetchBtcPriceFromCoinGecko() {
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true'
+    );
+    if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`);
+    const json = await res.json();
+    const md = json.market_data;
+    return {
+      price: md.current_price.usd,
+      changePct: md.price_change_percentage_24h,
+      changeAmount: md.price_change_24h,
+      spark: md.sparkline_7d && md.sparkline_7d.price ? md.sparkline_7d.price.slice(-24) : []
+    };
+  }
+
+  // 数据源3：Coinbase 现货价格接口（免费、无需Key，仅提供当前价，无涨跌幅/历史数据，作为最后兜底）
+  async function fetchBtcPriceFromCoinbase() {
+    const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+    if (!res.ok) throw new Error(`Coinbase HTTP ${res.status}`);
+    const json = await res.json();
+    const price = parseFloat(json.data.amount);
+    return { price, changePct: null, changeAmount: null, spark: [] };
+  }
+
+  async function fetchBtcPrice() {
+    const sources = [
+      ['Binance', fetchBtcPriceFromBinance],
+      ['CoinGecko', fetchBtcPriceFromCoinGecko],
+      ['Coinbase', fetchBtcPriceFromCoinbase]
+    ];
+    let lastErr;
+    for (const [name, fn] of sources) {
+      try {
+        const result = await fn();
+        return result;
+      } catch (e) {
+        console.warn(`[BTC价格] ${name} 数据源不可用，尝试下一个：`, e.message || e);
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('所有BTC价格数据源均不可用');
+  }
+
+  // ---- 恐惧贪婪指数（alternative.me 公共接口，免费、无需 Key，每日更新） ----
+  async function fetchFearGreed() {
+    let res;
+    try {
+      res = await fetch('https://api.alternative.me/fng/?limit=15&format=json');
+    } catch (e) {
+      // 网络层直接失败：通常是 CORS 被拦截、DNS无法解析、或被浏览器插件/网络环境拦截
+      throw new Error(`网络请求被拒绝（可能是CORS/网络拦截）：${e.message || e}`);
+    }
+    if (!res.ok) throw new Error(`alternative.me HTTP ${res.status}`);
+    const json = await res.json();
+    const list = json.data || [];
+    if (!list.length) throw new Error('alternative.me 返回数据为空');
+    return { value: parseInt(list[0].value, 10) };
+  }
+
+  // ---- MVRV Z-Score（需在 CONFIG 中配置真实 API Key 后才会发起请求） ----
+  async function fetchMvrv() {
+    if (!CONFIG.MVRV_API_KEY) return null; // 未配置 Key，视为"暂不可用"而非"出错"
+    const res = await fetch(CONFIG.MVRV_API_ENDPOINT, {
+      headers: { Authorization: `Bearer ${CONFIG.MVRV_API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`MVRV Z-Score HTTP ${res.status}`);
+    const json = await res.json();
+    // 不同数据源/版本返回结构可能不同，这里做了常见几种字段名的兼容尝试，
+    // 若对接后取不到值，请打开浏览器控制台查看实际返回的 JSON 结构后调整下面这一行
+    const value = Number(
+      json.mvrvZscore ?? json.mvrv_z_score ?? json.value ?? (Array.isArray(json.data) ? json.data[json.data.length - 1][1] : undefined)
+    );
+    return Number.isFinite(value) ? value : null;
+  }
+
+  // ============================================================
+  // 轮询调度：BTC价格/恐惧贪婪指数刷新较快（30秒一次）；
+  // MVRV Z-Score 请求较少（8分钟一次），避免超出免费额度限制。
+  // 两路各自维护错误状态，任一出错则状态灯标红。
+  // ============================================================
+  let fastError = false;
+  let slowError = false;
+  const overallStatus = () => (fastError || slowError ? 'error' : 'success');
+
+  async function pollFast() {
+    setStatus('refreshing');
+    const patch = {};
+    let err = false;
+
+    try {
+      const btc = await fetchBtcPrice();
+      patch.btcPrice = btc.price;
+      patch.btcChangePct = btc.changePct;
+      patch.change24hAmount = btc.changeAmount;
+      patch.change24hPct = btc.changePct;
+      patch.btcSpark = btc.spark;
+      patch.change24hSpark = btc.spark;
+    } catch (e) {
+      console.error('[BTC价格] 获取失败，保留缓存值', e);
+      err = true;
+    }
+
+    try {
+      const fng = await fetchFearGreed();
+      patch.fng = fng.value;
+    } catch (e) {
+      console.error('[恐惧贪婪指数] 获取失败，保留缓存值', e);
+      err = true;
+    }
+
+    fastError = err;
+    patch.status = overallStatus();
+    updateMarketData(patch);
+  }
+
+  async function pollSlow() {
+    const patch = {};
+    let err = false;
+
+    try {
+      const mvrv = await fetchMvrv();
+      if (mvrv != null) {
+        patch.mvrv = mvrv;
+        patch.mvrvSpark = [...cache.mvrvSpark, mvrv].slice(-20); // 用历次真实轮询结果自建趋势序列
+        patch.mvrvConfigured = true;
+      } else {
+        patch.mvrvConfigured = false;
+      }
+    } catch (e) {
+      console.error('[MVRV Z-Score] 获取失败，保留缓存值', e);
+      err = true;
+      patch.mvrvConfigured = true;
+    }
+
+    slowError = err;
+    patch.status = overallStatus();
+    updateMarketData(patch);
+  }
+
+  // ============================================================
+  // 「钱包管理」页面
+  // ============================================================
+
+  // ---- 轻提示 Toast ----
+  let toastTimer = null;
+  function showToast(message) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('opacity-0');
+    el.classList.add('opacity-100');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.classList.remove('opacity-100');
+      el.classList.add('opacity-0');
+    }, 1800);
+  }
+
+  // ---- 地址格式校验 ----
+  // EVM地址：0x开头 + 40位十六进制字符，共42位字符
+  function isValidEvmAddress(addr) {
+    return /^0x[a-fA-F0-9]{40}$/.test(addr);
+  }
+  // BTC地址：兼容 Legacy(1.../3...) 与 Bech32/Bech32m(bc1...，含Taproot)
+  function isValidBtcAddress(addr) {
+    if (!addr) return false;
+    const base58Re = /^[13][A-HJ-NP-Za-km-z1-9]{25,34}$/;
+    const bech32Re = /^bc1[ac-hj-np-z02-9]{11,71}$/i;
+    return base58Re.test(addr) || bech32Re.test(addr);
+  }
+
+  function copyToClipboard(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => showToast('地址已复制到剪贴板'),
+        () => showToast('复制失败，请手动复制')
+      );
+    } else {
+      // 兼容不支持 clipboard API 的环境
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('地址已复制到剪贴板');
+      } catch (e) {
+        showToast('复制失败，请手动复制');
+      }
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ---- 策略规则（触发档位 / 建议买入份数 / 最低买入份数 / 最高买入份数）----
+  // 唯一权威数据源：策略信号卡片、钱包管理页规则表、快速记录表单校验，全部从这里读取，
+  // 避免同一档位在多处出现不一致的份数口径（消除规则歧义）。
+  // tier 为内部档位代码（与交易记录 triggerTier 字段取值一致），label 为界面展示文案。
+  const STRATEGY_RULE_TABLE = {
+    a: [
+      { tier: '定期', label: '固定周期（每月27号）', min: 1, max: 1, suggested: 1 }
+    ],
+    b: [
+      { tier: '第一档', label: '第1档：恐慌贪婪指数 < 20', min: 3, max: 6, suggested: 6 },
+      { tier: '第二档', label: '第2档：恐慌贪婪指数 < 10', min: 5, max: 9, suggested: 9 }
+    ],
+    c: [
+      { tier: '第一档', label: '第1档：MVRV Z-Score < 1.2', min: 4, max: 8, suggested: 8 },
+      { tier: '第二档', label: '第2档：MVRV Z-Score < 1', min: 9, max: 17, suggested: 17 }
+    ]
+  };
+
+  // 部分档位代码在校验时应复用另一档位的份数规则：
+  // 「补操作」是 A 钱包「定期」顺延一天执行，份数上下限与「定期」完全一致；
+  // 「收尾买入」「手动」「--」不做份数上下限约束（分别见资金兜底规则⑤与无命中档位场景）。
+  const TIER_RULE_ALIAS = { 补操作: '定期' };
+
+  function findRule(walletKey, tierCode) {
+    const normalized = TIER_RULE_ALIAS[tierCode] || tierCode;
+    return (STRATEGY_RULE_TABLE[walletKey] || []).find((r) => r.tier === normalized) || null;
+  }
+
+  function formatDateOnly(isoOrDate) {
+    const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  /**
+   * 规则①（档位互斥）+ 规则④（固定日顺延）：
+   * 计算某钱包"此时此刻"命中的唯一策略档位，返回 null 表示未命中任何档位（按"手动"处理）。
+   * - A钱包：27日固定档位为「定期」；若27日当天没有成功记录，28日仍可执行并自动标记为「补操作」；
+   *   其余日期不构成固定档位。
+   * - B/C钱包：按恐慌贪婪指数 / MVRV Z-Score 分档，永远只返回当前所处的最高档位，不叠加计算，
+   *   且"等于阈值"不触发，仅"小于阈值"触发。
+   */
+  function resolveTriggerTier(walletKey, now) {
+    const date = now || new Date();
+
+    if (walletKey === 'a') {
+      const day = date.getDate();
+      if (day === 27) {
+        const rule = findRule('a', '定期');
+        return rule ? Object.assign({}, rule, { tier: '定期' }) : null;
+      }
+      if (day === 28) {
+        const y = date.getFullYear();
+        const m = date.getMonth();
+        const day27Str = `${y}-${String(m + 1).padStart(2, '0')}-27`;
+        const alreadyDone = transactionRecords.some(
+          (r) => r.wallet === 'a' && r.triggerTier === '定期' && formatDateOnly(r.time) === day27Str
+        );
+        if (!alreadyDone) {
+          const rule = findRule('a', '定期');
+          return rule ? Object.assign({}, rule, { tier: '补操作' }) : null;
+        }
+      }
+      return null;
+    }
+
+    if (walletKey === 'b') {
+      if (cache.fng == null) return null;
+      if (cache.fng < 10) return findRule('b', '第二档');
+      if (cache.fng < 20) return findRule('b', '第一档');
+      return null;
+    }
+
+    if (walletKey === 'c') {
+      if (!cache.mvrvConfigured || cache.mvrv == null) return null;
+      if (cache.mvrv < 1) return findRule('c', '第二档');
+      if (cache.mvrv < 1.2) return findRule('c', '第一档');
+      return null;
+    }
+
+    return null;
+  }
+
+  // 该钱包在扣除某条记录（编辑场景需排除自身，新增场景传 null）后的剩余资金
+  function computeRemainingExcluding(walletKey, excludeId) {
+    const cfg = WALLET_CONFIG[walletKey];
+    if (!cfg) return 0;
+    const investedOthers = transactionRecords
+      .filter((r) => r.wallet === walletKey && r.id !== excludeId)
+      .reduce((sum, r) => sum + (Number(r.investedUsdc) || 0), 0);
+    return round2(Math.max(0, cfg.initial - round2(investedOthers)));
+  }
+
+  // 规则③下半段：买入份数不得低于/高于对应档位的上下限
+  function validateShareBounds(walletKey, tierCode, investedUsdc) {
+    const rule = findRule(walletKey, tierCode);
+    if (!rule) return { ok: true }; // 未命中具体档位规则（手动/收尾买入/未分类）→ 不设上下限
+    const share = perShareAmount(walletKey);
+    const shares = share > 0 ? investedUsdc / share : 0;
+    const EPS = 1e-6;
+    if (shares < rule.min - EPS) {
+      return {
+        ok: false,
+        message: `当前档位「${tierCode}」买入份数不得低于 ${rule.min} 份（约 ${formatUsdc(round2(rule.min * share))}），本次约折算 ${shares.toFixed(2)} 份`
+      };
+    }
+    if (shares > rule.max + EPS) {
+      return {
+        ok: false,
+        message: `当前档位「${tierCode}」买入份数不得高于 ${rule.max} 份（约 ${formatUsdc(round2(rule.max * share))}），本次约折算 ${shares.toFixed(2)} 份`
+      };
+    }
+    return { ok: true };
+  }
+
+  /**
+   * 新增交易记录的统一校验入口（规则③④⑤）：
+   *   1) 剩余资金不足以覆盖本次投入 → 拒绝并提示最大可买金额
+   *   2) 剩余资金不足1份且本次投入=全部剩余资金 → 放行，标记「收尾买入」（规则⑤，跳过份数上下限）
+   *   3) 否则按当前实时命中的档位（resolveTriggerTier）校验份数上下限（规则③）
+   * 返回 { ok:true, tierCode } 或 { ok:false, message }
+   */
+  function validateNewTransaction(walletKey, investedUsdc) {
+    const remaining = computeRemainingExcluding(walletKey, null);
+    const share = perShareAmount(walletKey);
+
+    if (remaining <= 0) {
+      return { ok: false, message: `${WM_WALLET_TITLE[walletKey]}资金已全部投入完毕，无法继续买入` };
+    }
+    if (investedUsdc - remaining > 0.005) {
+      return { ok: false, message: `超出剩余资金，${WM_WALLET_TITLE[walletKey]}最多还可买入 ${formatUsdc(remaining)}` };
+    }
+
+    const isFinalBuyout = remaining < share && Math.abs(investedUsdc - remaining) < 0.01;
+    if (isFinalBuyout) {
+      return { ok: true, tierCode: '收尾买入' };
+    }
+
+    const tierInfo = resolveTriggerTier(walletKey);
+    const tierCode = tierInfo ? tierInfo.tier : '手动';
+    const boundsCheck = validateShareBounds(walletKey, tierCode, investedUsdc);
+    if (!boundsCheck.ok) return boundsCheck;
+    return { ok: true, tierCode };
+  }
+
+  /**
+   * 编辑交易记录的统一校验入口：与新增校验规则一致，区别在于
+   *   - 剩余资金计算时排除自身这条记录（避免"自己占用自己的额度"）
+   *   - 档位不是实时判定，而是用户在弹窗里手动选择的 triggerTier（--/手动 不设上下限）
+   */
+  function validateEditedTransaction(recordId, walletKey, investedUsdc, selectedTierCode) {
+    const remaining = computeRemainingExcluding(walletKey, recordId);
+    const share = perShareAmount(walletKey);
+
+    if (investedUsdc - remaining > 0.005) {
+      return { ok: false, message: `超出剩余资金，${WM_WALLET_TITLE[walletKey]}最多可调整为 ${formatUsdc(remaining)}` };
+    }
+
+    const isFinalBuyout = remaining < share && Math.abs(investedUsdc - remaining) < 0.01;
+    if (isFinalBuyout) {
+      return { ok: true, tierCode: '收尾买入' };
+    }
+
+    if (selectedTierCode && selectedTierCode !== '--' && selectedTierCode !== '手动') {
+      const boundsCheck = validateShareBounds(walletKey, selectedTierCode, investedUsdc);
+      if (!boundsCheck.ok) return boundsCheck;
+    }
+    return { ok: true, tierCode: selectedTierCode };
+  }
+
+  // ============================================================
+  // 规则②（单日冷却）：同一钱包同一档位，同一自然日仅提示1次买入建议。
+  // 提示记录持久化到本地存储，刷新页面/跨会话也不会重复弹出。
+  // ============================================================
+  const NOTIFIED_TIERS_KEY = 'btc-dca-notified-tiers-v1';
+  function validateNotifiedMap(v) {
+    return isPlainObject(v);
+  }
+  let notifiedTiers = safeLoadJSON(NOTIFIED_TIERS_KEY, validateNotifiedMap, {}, '每日提示记录');
+
+  function pruneOldNotifiedTiers() {
+    const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000; // 只保留最近3天，避免无限增长
+    Object.keys(notifiedTiers).forEach((key) => {
+      const dateStr = key.split(':')[2];
+      const t = new Date(dateStr).getTime();
+      if (!Number.isFinite(t) || t < cutoff) delete notifiedTiers[key];
+    });
+  }
+
+  function maybeNotifyTier(walletKey, tierInfo) {
+    if (!tierInfo) return;
+    const dateStr = formatDateOnly(new Date());
+    const key = `${walletKey}:${tierInfo.tier}:${dateStr}`;
+    if (notifiedTiers[key]) return; // 规则②：今天已经提示过这个钱包这个档位了，不再重复提示
+    notifiedTiers[key] = true;
+    pruneOldNotifiedTiers();
+    safeSaveJSON(NOTIFIED_TIERS_KEY, notifiedTiers);
+    const share = perShareAmount(walletKey);
+    showToast(
+      `${WM_WALLET_TITLE[walletKey]}触发「${tierInfo.tier}」买入信号：建议买入 ${tierInfo.suggested} 份（约 ${formatUsdc(round2(tierInfo.suggested * share))}）`
+    );
+  }
+
+  const WM_WALLET_TITLE = { a: 'A钱包', b: 'B钱包', c: 'C钱包' };
+
+  // 生成单个钱包详情卡片的 innerHTML（含所有字段占位 id，供 renderWalletManagementPage 填充数值）
+  function walletManagementCardTemplate(key) {
+    const rules = STRATEGY_RULE_TABLE[key] || [];
+    const rulesRows = rules
+      .map(
+        (r) => `
+          <tr class="border-b border-white/5 last:border-b-0">
+            <td class="py-1.5 text-white">${r.label}</td>
+            <td class="py-1.5 text-right text-textmuted">${r.min} 份</td>
+            <td class="py-1.5 text-right text-white">${r.max} 份</td>
+          </tr>`
+      )
+      .join('');
+
+    return `
+      <!-- 头部 -->
+      <div class="flex items-center gap-3 pb-4 border-b border-white/10">
+        <span class="text-white font-bold text-lg">${WM_WALLET_TITLE[key]}</span>
+        <span id="wm-${key}-owner" class="text-textmuted text-sm">负责人：--</span>
+      </div>
+
+      <!-- 基础信息行 -->
+      <div class="grid grid-cols-4 gap-4 pb-5 border-b border-white/10">
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">策略类型</span>
+          <span id="wm-${key}-strategy" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">初始资金</span>
+          <span id="wm-${key}-initial" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">总份数</span>
+          <span id="wm-${key}-totalshares" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">单份金额</span>
+          <span id="wm-${key}-pershare" class="text-white text-sm font-medium">--</span>
+        </div>
+      </div>
+
+      <!-- 地址管理区 -->
+      <div class="flex flex-col gap-2 pb-5 border-b border-white/10">
+        <span class="text-white font-medium text-sm mb-1">地址管理</span>
+
+        <div class="flex items-center gap-2">
+          <span class="text-textmuted text-xs w-32 shrink-0">EVM充值地址</span>
+          <span id="wm-${key}-evm-display" class="text-textmuted text-xs font-mono flex-1 truncate">--</span>
+          <input id="wm-${key}-evm-input" type="text" class="hidden flex-1 bg-bgmain border border-white/10 text-white text-xs font-mono rounded-md p-1.5 focus:outline-none focus:border-accent">
+          <button type="button" id="wm-${key}-evm-copy" class="text-textmuted hover:text-white transition-colors shrink-0" aria-label="复制EVM地址" title="复制">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </button>
+          <button type="button" id="wm-${key}-evm-edit" class="text-textmuted hover:text-white text-xs shrink-0 whitespace-nowrap">编辑</button>
+          <button type="button" id="wm-${key}-evm-save" class="hidden text-profit hover:text-white text-xs shrink-0 whitespace-nowrap">保存</button>
+          <button type="button" id="wm-${key}-evm-cancel" class="hidden text-textmuted hover:text-white text-xs shrink-0 whitespace-nowrap">取消</button>
+        </div>
+        <p id="wm-${key}-evm-error" class="text-loss text-xs hidden pl-32"></p>
+
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-textmuted text-xs w-32 shrink-0">BTC主网提币地址</span>
+          <span id="wm-${key}-btc-display" class="text-textmuted text-xs font-mono flex-1 truncate">--</span>
+          <input id="wm-${key}-btc-input" type="text" class="hidden flex-1 bg-bgmain border border-white/10 text-white text-xs font-mono rounded-md p-1.5 focus:outline-none focus:border-accent">
+          <button type="button" id="wm-${key}-btc-copy" class="text-textmuted hover:text-white transition-colors shrink-0" aria-label="复制BTC地址" title="复制">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+          </button>
+          <button type="button" id="wm-${key}-btc-edit" class="text-textmuted hover:text-white text-xs shrink-0 whitespace-nowrap">编辑</button>
+          <button type="button" id="wm-${key}-btc-save" class="hidden text-profit hover:text-white text-xs shrink-0 whitespace-nowrap">保存</button>
+          <button type="button" id="wm-${key}-btc-cancel" class="hidden text-textmuted hover:text-white text-xs shrink-0 whitespace-nowrap">取消</button>
+        </div>
+        <p id="wm-${key}-btc-error" class="text-loss text-xs hidden pl-32"></p>
+      </div>
+
+      <!-- 策略规则区 -->
+      <div class="pb-5 border-b border-white/10">
+        <span class="text-white font-medium text-sm">策略规则</span>
+        <table class="w-full text-xs mt-2 border-collapse">
+          <thead>
+            <tr class="text-textmuted border-b border-white/10">
+              <th class="text-left py-1.5 font-medium">触发档位</th>
+              <th class="text-right py-1.5 font-medium">最低买入份数</th>
+              <th class="text-right py-1.5 font-medium">最高买入份数</th>
+            </tr>
+          </thead>
+          <tbody>${rulesRows}</tbody>
+        </table>
+      </div>
+
+      <!-- 资产汇总行 -->
+      <div class="grid grid-cols-5 gap-4">
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">剩余资金</span>
+          <span id="wm-${key}-remaining" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">持仓BTC</span>
+          <span id="wm-${key}-holding" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">平均成本</span>
+          <span id="wm-${key}-avgcost" class="text-white text-sm font-medium">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">浮动盈亏</span>
+          <span id="wm-${key}-pnl" class="text-sm font-medium text-textmuted">--</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-textmuted text-xs">链上资产变动（24h）</span>
+          <span id="wm-${key}-chain-change" class="text-sm font-medium text-textmuted">--</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // 记录每个钱包地址字段当前是否处于编辑态，避免每次 renderWalletManagementPage 都打断正在编辑的输入框
+  const wmEditingState = { a: { evm: false, btc: false }, b: { evm: false, btc: false }, c: { evm: false, btc: false } };
+
+  function wmSetupAddressRow(key, field, label) {
+    const display = document.getElementById(`wm-${key}-${field}-display`);
+    const input = document.getElementById(`wm-${key}-${field}-input`);
+    const copyBtn = document.getElementById(`wm-${key}-${field}-copy`);
+    const editBtn = document.getElementById(`wm-${key}-${field}-edit`);
+    const saveBtn = document.getElementById(`wm-${key}-${field}-save`);
+    const cancelBtn = document.getElementById(`wm-${key}-${field}-cancel`);
+    const errorEl = document.getElementById(`wm-${key}-${field}-error`);
+    if (!display || !input || !copyBtn || !editBtn || !saveBtn || !cancelBtn) return;
+
+    copyBtn.addEventListener('click', () => {
+      const addr = walletState[key][field === 'evm' ? 'evmAddress' : 'btcAddress'] || '';
+      if (!addr) {
+        showToast('地址尚未设置，无法复制');
+        return;
+      }
+      copyToClipboard(addr);
+    });
+
+    editBtn.addEventListener('click', () => {
+      wmEditingState[key][field] = true;
+      const current = walletState[key][field === 'evm' ? 'evmAddress' : 'btcAddress'] || '';
+      input.value = current;
+      display.classList.add('hidden');
+      input.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+      copyBtn.classList.add('hidden');
+      saveBtn.classList.remove('hidden');
+      cancelBtn.classList.remove('hidden');
+      errorEl.classList.add('hidden');
+      input.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      wmEditingState[key][field] = false;
+      display.classList.remove('hidden');
+      input.classList.add('hidden');
+      editBtn.classList.remove('hidden');
+      copyBtn.classList.remove('hidden');
+      saveBtn.classList.add('hidden');
+      cancelBtn.classList.add('hidden');
+      errorEl.classList.add('hidden');
+    });
+
+    // 防重复提交：保存时按钮立即置灰，校验/写入完成后恢复
+    saveBtn.addEventListener('click', () => {
+      if (saveBtn.disabled) return;
+      saveBtn.disabled = true;
+      try {
+        const value = input.value.trim();
+        const isEvm = field === 'evm';
+        const configField = isEvm ? 'evmAddress' : 'btcAddress';
+
+        // BTC地址允许留空（表示"待补充"），EVM地址不允许为空
+        if (!isEvm && value === '') {
+          updateWalletConfigField(key, configField, '');
+          wmEditingState[key][field] = false;
+          renderWalletManagementPage();
+          renderWallets(); // 概览卡片地址展示同步刷新
+          showToast('已保存（BTC地址：待补充）');
+          return;
+        }
+
+        const valid = isEvm ? isValidEvmAddress(value) : isValidBtcAddress(value);
+        if (!valid) {
+          errorEl.textContent = isEvm
+            ? '格式错误：EVM地址须以 0x 开头，共 42 位字符（0x + 40位十六进制）'
+            : '格式错误：请输入合法的BTC地址（1.../3.../bc1...）';
+          errorEl.classList.remove('hidden');
+          return;
+        }
+
+        updateWalletConfigField(key, configField, value);
+        wmEditingState[key][field] = false;
+        renderWalletManagementPage();
+        renderWallets(); // 概览卡片地址展示同步刷新
+        showToast(`${label}已保存`);
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  }
+
+  let wmInitialized = false;
+  function initWalletManagementPage() {
+    if (wmInitialized) return;
+    ['a', 'b', 'c'].forEach((key) => {
+      const card = document.getElementById(`wm-${key}-card`);
+      if (!card) return;
+      card.innerHTML = walletManagementCardTemplate(key);
+      wmSetupAddressRow(key, 'evm', 'EVM充值地址');
+      wmSetupAddressRow(key, 'btc', 'BTC主网提币地址');
+    });
+    wmInitialized = true;
+  }
+
+  function wmShortAddr(addr) {
+    if (!addr) return '';
+    return addr.length > 20 ? `${addr.slice(0, 10)}...${addr.slice(-8)}` : addr;
+  }
+
+  function renderWalletManagementPage() {
+    const pageEl = document.getElementById('page-wallets');
+    if (!pageEl) return;
+    initWalletManagementPage(); // 首次调用时惰性生成卡片DOM结构与事件绑定
+
+    ['a', 'b', 'c'].forEach((key) => {
+      const w = walletState[key];
+      if (!w) return;
+
+      const ownerEl = document.getElementById(`wm-${key}-owner`);
+      if (ownerEl) ownerEl.textContent = `负责人：${w.owner || '--'}`;
+
+      const strategyEl = document.getElementById(`wm-${key}-strategy`);
+      if (strategyEl) strategyEl.textContent = w.strategy || '--';
+
+      const initialEl = document.getElementById(`wm-${key}-initial`);
+      if (initialEl) initialEl.textContent = formatUsdc(w.initial);
+
+      const totalSharesEl = document.getElementById(`wm-${key}-totalshares`);
+      if (totalSharesEl) totalSharesEl.textContent = `${w.totalShares} 份`;
+
+      const perShareEl = document.getElementById(`wm-${key}-pershare`);
+      if (perShareEl) perShareEl.textContent = formatUsdc(perShareAmount(key)); // 规则①
+
+      // ---- 地址展示（编辑中的字段不覆盖，避免打断用户输入） ----
+      if (!wmEditingState[key].evm) {
+        const evmDisplay = document.getElementById(`wm-${key}-evm-display`);
+        if (evmDisplay) {
+          const addr = w.evmAddress || '';
+          evmDisplay.textContent = addr ? wmShortAddr(addr) : '待补充';
+          evmDisplay.title = addr;
+          evmDisplay.className = addr
+            ? 'text-textmuted text-xs font-mono flex-1 truncate'
+            : 'text-accent text-xs font-mono flex-1 truncate';
+        }
+      }
+      if (!wmEditingState[key].btc) {
+        const btcDisplay = document.getElementById(`wm-${key}-btc-display`);
+        if (btcDisplay) {
+          const addr = w.btcAddress || '';
+          btcDisplay.textContent = addr ? wmShortAddr(addr) : '待补充';
+          btcDisplay.title = addr;
+          // B钱包BTC地址默认"待补充"时标橙提示
+          btcDisplay.className = addr
+            ? 'text-textmuted text-xs font-mono flex-1 truncate'
+            : 'text-accent text-xs font-mono flex-1 truncate';
+        }
+      }
+
+      // ---- 资产汇总（与总览页资产卡片使用同一套聚合结果，天然保持同步） ----
+      const invested = round2(Math.max(0, w.invested));
+      const remaining = round2(Math.max(0, w.initial - invested));
+      const btc = round8(Math.max(0, w.btc));
+      const avgCost = btc > 0 ? round2(invested / btc) : null;
+      const currentPrice = cache.btcPrice;
+      const pnl = (currentPrice != null && btc > 0) ? round2((currentPrice - avgCost) * btc) : null;
+      const pnlPct = (pnl != null && invested > 0) ? round2((pnl / invested) * 100) : null;
+
+      const remainingEl = document.getElementById(`wm-${key}-remaining`);
+      if (remainingEl) remainingEl.textContent = formatUsdc(remaining);
+
+      const holdingEl = document.getElementById(`wm-${key}-holding`);
+      if (holdingEl) holdingEl.textContent = btc > 0 ? `${formatBtcNum(btc)} BTC` : '-- BTC';
+
+      const avgCostEl = document.getElementById(`wm-${key}-avgcost`);
+      if (avgCostEl) avgCostEl.textContent = avgCost != null ? formatUsdc(avgCost) : '--';
+
+      const pnlEl = document.getElementById(`wm-${key}-pnl`);
+      if (pnlEl) {
+        if (pnl != null) {
+          const up = pnl >= 0;
+          const pctText = pnlPct != null ? ` (${up ? '+' : ''}${pnlPct.toFixed(2)}%)` : '';
+          pnlEl.textContent = `${up ? '+' : '-'}$${Math.abs(pnl).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}${pctText}`;
+          pnlEl.className = `text-sm font-medium ${up ? 'text-profit' : 'text-loss'}`;
+        } else {
+          pnlEl.textContent = '--';
+          pnlEl.className = 'text-sm font-medium text-textmuted';
+        }
+      }
+
+      // ---- 链上资产变动（24h）：基于当前持仓与BTC价格24h涨跌幅估算的浮动价值变动 ----
+      // 说明：当前未接入区块链浏览器API做实时到账/转出监测，此处以"持仓 × 价格24h涨跌"作为价值变动的估算展示
+      const chainChangeEl = document.getElementById(`wm-${key}-chain-change`);
+      if (chainChangeEl) {
+        if (btc > 0 && cache.change24hPct != null) {
+          const changeValue = round2(btc * (currentPrice != null ? currentPrice : 0) * (cache.change24hPct / 100));
+          const up = changeValue >= 0;
+          chainChangeEl.textContent = `${up ? '+' : '-'}$${Math.abs(changeValue).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })} (24h估算)`;
+          chainChangeEl.className = `text-sm font-medium ${up ? 'text-profit' : 'text-loss'}`;
+        } else {
+          chainChangeEl.textContent = '--';
+          chainChangeEl.className = 'text-sm font-medium text-textmuted';
+        }
+      }
+    });
+  }
+
+  initAssetCharts();
+  recomputeWalletsFromTransactions(); // 依据已加载（本地存储或默认）的交易记录聚合出钱包数据
+  renderTransactionTable(transactionRecords); // 渲染交易记录表格
+  renderFromCache(); // 先用本地存储中的缓存行情数据渲染一次（含策略信号 + 钱包卡片），避免刷新瞬间变回"--"
+  applySparklineVisibility();
+
+  // ============================================================
+  // 自动刷新调度：
+  //   · 频率/开关均取自"系统设置"页（APP_SETTINGS），修改后立即生效
+  //   · 失败退避重试：每连续失败一次，下次重试间隔翻倍，最长不超过10分钟，
+  //     避免接口持续异常时仍高频重复请求
+  //   · 页面从后台切回前台时，立即触发一次刷新（并重置退避计数）
+  //   · MVRV Z-Score 轮询间隔始终取"用户设置的频率"与"8分钟"的较大值，
+  //     避免选择过高频率时打爆第三方免费额度
+  // ============================================================
+  const RETRY_BACKOFF_MULTIPLIER = 2;
+  const MAX_RETRY_BACKOFF_MS = 10 * 60 * 1000; // 重试间隔上限：10分钟
+  const FOREGROUND_REFRESH_DEBOUNCE_MS = 5 * 1000; // 5秒内已刷新过则不重复触发前台刷新
+
+  let fastPollTimeoutId = null;
+  let slowPollTimeoutId = null;
+  let fastFailStreak = 0;
+  let slowFailStreak = 0;
+  let lastFastPollAt = 0;
+
+  function getFastBaseMs() {
+    return APP_SETTINGS.refreshIntervalMinutes * 60 * 1000;
+  }
+  function getSlowBaseMs() {
+    return Math.max(getFastBaseMs(), 8 * 60 * 1000);
+  }
+
+  function stopPolling() {
+    if (fastPollTimeoutId) clearTimeout(fastPollTimeoutId);
+    if (slowPollTimeoutId) clearTimeout(slowPollTimeoutId);
+    fastPollTimeoutId = null;
+    slowPollTimeoutId = null;
+  }
+
+  // 自链式调度：每次拉取完成后，根据本次成功/失败决定下一次的等待时长，再重新 setTimeout 自己
+  async function runFastPollCycle() {
+    lastFastPollAt = Date.now();
+    await pollFast(); // 内部会更新 fastError 状态
+    if (!APP_SETTINGS.autoRefreshEnabled) return; // 轮询期间被关闭：不再继续排程
+    if (fastPollTimeoutId) clearTimeout(fastPollTimeoutId);
+    if (fastError) {
+      fastFailStreak += 1;
+      const delay = Math.min(getFastBaseMs() * Math.pow(RETRY_BACKOFF_MULTIPLIER, fastFailStreak), MAX_RETRY_BACKOFF_MS);
+      fastPollTimeoutId = setTimeout(runFastPollCycle, delay);
+    } else {
+      fastFailStreak = 0;
+      fastPollTimeoutId = setTimeout(runFastPollCycle, getFastBaseMs());
+    }
+  }
+
+  async function runSlowPollCycle() {
+    await pollSlow();
+    if (!APP_SETTINGS.autoRefreshEnabled) return;
+    if (slowPollTimeoutId) clearTimeout(slowPollTimeoutId);
+    if (slowError) {
+      slowFailStreak += 1;
+      const delay = Math.min(getSlowBaseMs() * Math.pow(RETRY_BACKOFF_MULTIPLIER, slowFailStreak), MAX_RETRY_BACKOFF_MS);
+      slowPollTimeoutId = setTimeout(runSlowPollCycle, delay);
+    } else {
+      slowFailStreak = 0;
+      slowPollTimeoutId = setTimeout(runSlowPollCycle, getSlowBaseMs());
+    }
+  }
+
+  // 供"系统设置"页在频率变更时调用：按新频率重新排程下一次轮询（不立即拉取）
+  function reschedulePolling() {
+    stopPolling();
+    fastFailStreak = 0;
+    slowFailStreak = 0;
+    if (!APP_SETTINGS.autoRefreshEnabled) return;
+    fastPollTimeoutId = setTimeout(runFastPollCycle, getFastBaseMs());
+    slowPollTimeoutId = setTimeout(runSlowPollCycle, getSlowBaseMs());
+  }
+
+  // 页面从后台切回前台：立即触发一次刷新并重置退避计数，避免长时间离开后数据陈旧
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!APP_SETTINGS.autoRefreshEnabled) return;
+    if (Date.now() - lastFastPollAt < FOREGROUND_REFRESH_DEBOUNCE_MS) return; // 防抖：避免频繁切换标签页导致连续请求
+    stopPolling();
+    fastFailStreak = 0;
+    slowFailStreak = 0;
+    runFastPollCycle();
+    runSlowPollCycle();
+  });
+
+  // 首次加载：立即拉取一次，并各自开始自链式排程
+  runFastPollCycle();
+  runSlowPollCycle();
+
+  // ============================================================
+  // 系统设置页交互
+  // ============================================================
+
+  // ---- 1. 自动刷新设置：开关 + 频率下拉，均在初始化时同步为APP_SETTINGS当前值 ----
+  const autoRefreshToggle = document.getElementById('settings-auto-refresh-toggle');
+  const refreshIntervalSelect = document.getElementById('settings-refresh-interval');
+  if (autoRefreshToggle) {
+    autoRefreshToggle.checked = APP_SETTINGS.autoRefreshEnabled;
+    autoRefreshToggle.addEventListener('change', () => {
+      APP_SETTINGS.autoRefreshEnabled = autoRefreshToggle.checked;
+      saveSettings();
+      if (APP_SETTINGS.autoRefreshEnabled) {
+        // 重新开启：立即刷新一次，而不是等到下一个完整周期
+        stopPolling();
+        fastFailStreak = 0;
+        slowFailStreak = 0;
+        runFastPollCycle();
+        runSlowPollCycle();
+      } else {
+        stopPolling();
+      }
+      showToast(APP_SETTINGS.autoRefreshEnabled ? '已开启自动刷新' : '已关闭自动刷新');
+    });
+  }
+  if (refreshIntervalSelect) {
+    refreshIntervalSelect.value = String(APP_SETTINGS.refreshIntervalMinutes);
+    refreshIntervalSelect.addEventListener('change', () => {
+      APP_SETTINGS.refreshIntervalMinutes = Number(refreshIntervalSelect.value);
+      saveSettings();
+      reschedulePolling();
+      showToast(`刷新频率已更新为${refreshIntervalSelect.options[refreshIntervalSelect.selectedIndex].text}`);
+    });
+  }
+
+  // ---- 2. 数据备份与恢复 ----
+  function buildBackupPayload() {
+    return {
+      version: 'btc-dca-backup-v1',
+      exportedAt: new Date().toISOString(),
+      transactionRecords: cloneDeep(transactionRecords),
+      walletConfig: cloneDeep(WALLET_CONFIG)
+    };
+  }
+
+  function validateBackupPayload(v) {
+    return (
+      isPlainObject(v) &&
+      Array.isArray(v.transactionRecords) &&
+      validateTransactionRecords(v.transactionRecords) &&
+      validateWalletConfig(v.walletConfig)
+    );
+  }
+
+  const exportBackupBtn = document.getElementById('settings-export-backup');
+  if (exportBackupBtn) {
+    exportBackupBtn.addEventListener('click', () => {
+      const payload = buildBackupPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+      a.href = url;
+      a.download = `btc-dca-backup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('备份已导出');
+    });
+  }
+
+  const importBackupBtn = document.getElementById('settings-import-backup');
+  const importFileInput = document.getElementById('settings-import-file');
+  const backupErrorEl = document.getElementById('settings-backup-error');
+  const importConfirmModal = document.getElementById('import-confirm-modal');
+  const importConfirmFilename = document.getElementById('import-confirm-filename');
+  let pendingImportPayload = null;
+
+  if (importBackupBtn && importFileInput) {
+    importBackupBtn.addEventListener('click', () => importFileInput.click());
+    importFileInput.addEventListener('change', () => {
+      const file = importFileInput.files && importFileInput.files[0];
+      if (!file) return;
+      if (backupErrorEl) backupErrorEl.classList.add('hidden');
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        let parsed;
+        try {
+          parsed = JSON.parse(reader.result);
+        } catch (e) {
+          if (backupErrorEl) {
+            backupErrorEl.textContent = '导入失败：文件内容不是合法的JSON格式';
+            backupErrorEl.classList.remove('hidden');
+          }
+          importFileInput.value = '';
+          return;
+        }
+        if (!validateBackupPayload(parsed)) {
+          if (backupErrorEl) {
+            backupErrorEl.textContent = '导入失败：文件内容格式与备份数据结构不匹配（校验交易记录/钱包配置字段未通过）';
+            backupErrorEl.classList.remove('hidden');
+          }
+          importFileInput.value = '';
+          return;
+        }
+        // 格式校验通过：暂存待导入数据，弹出二次确认弹窗
+        pendingImportPayload = parsed;
+        if (importConfirmFilename) importConfirmFilename.textContent = `文件：${file.name}`;
+        if (importConfirmModal) {
+          importConfirmModal.classList.remove('hidden');
+          importConfirmModal.classList.add('flex');
+        }
+      };
+      reader.onerror = () => {
+        if (backupErrorEl) {
+          backupErrorEl.textContent = '导入失败：文件读取出错，请重试';
+          backupErrorEl.classList.remove('hidden');
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  function closeImportConfirmModal() {
+    if (!importConfirmModal) return;
+    importConfirmModal.classList.add('hidden');
+    importConfirmModal.classList.remove('flex');
+    pendingImportPayload = null;
+    if (importFileInput) importFileInput.value = '';
+  }
+
+  const importConfirmCancelBtn = document.getElementById('import-confirm-cancel');
+  const importConfirmOkBtn = document.getElementById('import-confirm-ok');
+  if (importConfirmCancelBtn) importConfirmCancelBtn.addEventListener('click', closeImportConfirmModal);
+  if (importConfirmOkBtn) {
+    importConfirmOkBtn.addEventListener('click', () => {
+      if (!pendingImportPayload) return;
+      // 恢复交易记录
+      transactionRecords = pendingImportPayload.transactionRecords.map(normalizeRecord);
+      saveTransactionsToStorage();
+      // 恢复钱包配置（逐字段写入，保持 WALLET_CONFIG / walletState 对象引用不变）
+      ['a', 'b', 'c'].forEach((key) => {
+        const src = pendingImportPayload.walletConfig[key];
+        Object.keys(src).forEach((field) => updateWalletConfigField(key, field, src[field]));
+      });
+      refreshAll(); // 内部会联动刷新钱包管理页/资产图表/全局汇总/数据分析页
+      closeImportConfirmModal();
+      showToast('数据已导入恢复');
+    });
+  }
+
+  // ---- 3. 数据重置（需输入确认文字才能执行） ----
+  const resetBtn = document.getElementById('settings-reset-data');
+  const resetModal = document.getElementById('reset-confirm-modal');
+  const resetInput = document.getElementById('reset-confirm-input');
+  const resetCancelBtn = document.getElementById('reset-confirm-cancel');
+  const resetOkBtn = document.getElementById('reset-confirm-ok');
+  const RESET_CONFIRM_TEXT = '确认重置';
+
+  function closeResetModal() {
+    if (!resetModal) return;
+    resetModal.classList.add('hidden');
+    resetModal.classList.remove('flex');
+    if (resetInput) resetInput.value = '';
+    if (resetOkBtn) resetOkBtn.disabled = true;
+  }
+
+  if (resetBtn && resetModal) {
+    resetBtn.addEventListener('click', () => {
+      resetModal.classList.remove('hidden');
+      resetModal.classList.add('flex');
+    });
+  }
+  if (resetInput && resetOkBtn) {
+    resetInput.addEventListener('input', () => {
+      resetOkBtn.disabled = resetInput.value.trim() !== RESET_CONFIRM_TEXT;
+    });
+  }
+  if (resetCancelBtn) resetCancelBtn.addEventListener('click', closeResetModal);
+  if (resetOkBtn) {
+    resetOkBtn.addEventListener('click', () => {
+      if (resetInput.value.trim() !== RESET_CONFIRM_TEXT) return;
+      transactionRecords = [];
+      saveTransactionsToStorage();
+      refreshAll();
+      closeResetModal();
+      showToast('已清空交易记录，钱包已还原为初始资金状态');
+    });
+  }
+
+  // ---- 4. 显示设置：USDC/BTC小数位 + 迷你走势图开关 ----
+  const usdcDecimalsSelect = document.getElementById('settings-usdc-decimals');
+  const btcDecimalsSelect = document.getElementById('settings-btc-decimals');
+  const sparklineToggle = document.getElementById('settings-show-sparklines-toggle');
+
+  // 触发一次全局重新渲染，让新的小数位/走势图设置立即反映到所有已渲染的页面
+  function reRenderEverythingForDisplaySettings() {
+    refreshAll();
+    renderFromCache();
+    applySparklineVisibility();
+  }
+
+  if (usdcDecimalsSelect) {
+    usdcDecimalsSelect.value = String(APP_SETTINGS.usdcDecimals);
+    usdcDecimalsSelect.addEventListener('change', () => {
+      APP_SETTINGS.usdcDecimals = Number(usdcDecimalsSelect.value);
+      saveSettings();
+      reRenderEverythingForDisplaySettings();
+    });
+  }
+  if (btcDecimalsSelect) {
+    btcDecimalsSelect.value = String(APP_SETTINGS.btcDecimals);
+    btcDecimalsSelect.addEventListener('change', () => {
+      APP_SETTINGS.btcDecimals = Number(btcDecimalsSelect.value);
+      saveSettings();
+      reRenderEverythingForDisplaySettings();
+    });
+  }
+  if (sparklineToggle) {
+    sparklineToggle.checked = APP_SETTINGS.showSparklines;
+    sparklineToggle.addEventListener('change', () => {
+      APP_SETTINGS.showSparklines = sparklineToggle.checked;
+      saveSettings();
+      applySparklineVisibility();
+    });
+  }
+})();
+</script>
+</body>
+</html>
