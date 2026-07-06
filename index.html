@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -18,6 +19,8 @@
           profit: '#10b981',
           loss: '#ef4444',
           textmuted: '#9ca3af',
+          neutral: '#5b6472',
+          warning: '#eab308',
         },
         boxShadow: {
           card: '0 2px 8px rgba(0,0,0,0.4)',
@@ -45,6 +48,30 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #3a3e48;
+  }
+
+  /* ============ 全局视觉精修：交互反馈与过渡的统一细节 ============ */
+
+  /* 输入框/下拉框统一聚焦光晕：与 focus:border-accent 配合，替代浏览器默认的生硬轮廓 */
+  input:focus, select:focus, textarea:focus {
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  input[type="text"], input[type="number"], input[type="date"], input[type="file"],
+  select, textarea {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  /* 恐惧贪婪指数仪表盘弧线：数值变化时颜色与角度平滑过渡，而非瞬间跳变 */
+  #fng-gauge-arc {
+    transition: stroke-dashoffset 0.6s ease, stroke 0.3s ease;
+  }
+
+  /* 卡片轻微悬浮反馈：可点击的钱包卡片在原有 ring 效果基础上叠加细微位移，增强"可交互"暗示 */
+  #wallet-a-card, #wallet-b-card, #wallet-c-card {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  #wallet-a-card:hover, #wallet-b-card:hover, #wallet-c-card:hover {
+    transform: translateY(-1px);
   }
 </style>
 </head>
@@ -164,30 +191,56 @@
     <div class="flex-1 flex flex-col ml-[260px] min-w-0">
 
       <!-- ============ 顶部状态栏容器 ============ -->
-      <header id="topbar" class="sticky top-0 h-16 bg-sidebar border-b border-black/30 flex items-center px-6 z-10 shrink-0">
-        <!-- 顶部状态栏内容占位区域：后续填充标题、实时价格、用户头像等 -->
-        <span class="text-textmuted text-sm">顶部状态栏内容区（待填充）</span>
+      <header id="topbar" class="sticky top-0 h-16 bg-sidebar border-b border-black/30 flex items-center justify-between gap-4 px-6 z-10 shrink-0">
+
+        <!-- 左：当前页面标题 + 副标题（随导航切换自动更新） -->
+        <div class="flex items-center gap-3 min-w-0">
+          <span id="topbar-page-icon" class="w-8 h-8 rounded-md bg-accent/15 text-accent flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z"/>
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h1 id="topbar-title" class="text-white font-bold text-lg leading-tight truncate">总览看板</h1>
+            <p id="topbar-subtitle" class="text-textmuted text-xs leading-tight truncate">多人共享 BTC 定投投资控制台</p>
+          </div>
+        </div>
+
+        <!-- 右：BTC实时行情条 + 数据同步状态 + 手动刷新 -->
+        <div class="flex items-center gap-4 shrink-0">
+
+          <!-- BTC 实时价格 -->
+          <div class="hidden sm:flex items-center gap-2 pr-4 border-r border-white/10">
+            <span class="w-6 h-6 rounded-full bg-accent/15 text-accent flex items-center justify-center text-[11px] font-bold shrink-0">₿</span>
+            <span id="topbar-btc-price" class="text-white font-bold text-sm tabular-nums">$--</span>
+            <span id="topbar-btc-change" class="text-xs font-medium text-textmuted tabular-nums">--%</span>
+          </div>
+
+          <!-- 数据同步状态：最后更新时间 + 状态指示灯（与行情数据看板共用同一份状态） -->
+          <div class="hidden md:flex items-center gap-2 pr-4 border-r border-white/10">
+            <span id="status-dot" class="w-2 h-2 rounded-full bg-warning transition-colors duration-300"></span>
+            <span id="status-text" class="text-textmuted text-xs whitespace-nowrap">数据同步中</span>
+            <span class="text-textmuted text-xs whitespace-nowrap">·</span>
+            <span class="text-textmuted text-xs whitespace-nowrap">最后更新 <span id="last-update-time" class="text-white">--</span></span>
+          </div>
+
+          <!-- 手动刷新 -->
+          <button type="button" id="topbar-refresh-btn" title="立即刷新行情数据" class="w-8 h-8 rounded-md flex items-center justify-center text-textmuted hover:text-white hover:bg-white/5 transition-colors shrink-0">
+            <svg id="topbar-refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <!-- ============ 右侧主内容区（可纵向滚动） ============ -->
       <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-bgmain">
 
         <!-- ============ 页面：总览看板 ============ -->
-        <div id="page-overview" class="space-y-5">
+        <div id="page-overview" class="space-y-5 transition-opacity duration-200 ease-in-out opacity-100">
 
         <!-- ============ 行情数据看板 ============ -->
         <section id="market-dashboard">
-
-          <!-- 数据状态栏：最后更新时间 + 同步状态指示灯 -->
-          <div class="flex items-center justify-between mb-5">
-            <span class="text-textmuted text-sm">
-              最后更新：<span id="last-update-time" class="text-white">加载中...</span>
-            </span>
-            <div class="flex items-center gap-2">
-              <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
-              <span id="status-text" class="text-textmuted text-sm">数据同步中</span>
-            </div>
-          </div>
 
           <!-- 4张数据卡片，等宽横向排列，间距20px -->
           <div class="grid grid-cols-4 gap-5">
@@ -251,7 +304,7 @@
             <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-profit flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <span class="text-white font-bold text-sm">A钱包（定期定额）</span>
-                <span id="signal-a-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">待执行</span>
+                <span id="signal-a-status" class="bg-neutral text-white text-xs font-medium rounded-full px-3 py-1">待执行</span>
               </div>
               <div class="text-textmuted text-xs space-y-1">
                 <p id="signal-a-caption">下次定投日：每月27号</p>
@@ -266,7 +319,7 @@
             <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-accent flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <span class="text-white font-bold text-sm">B钱包（情绪定投）</span>
-                <span id="signal-b-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
+                <span id="signal-b-status" class="bg-neutral text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
               </div>
               <div class="text-textmuted text-xs space-y-1">
                 <p id="signal-b-caption">当前恐慌指数：--</p>
@@ -281,7 +334,7 @@
             <div class="bg-card rounded-lg shadow-card p-5 border-l-4 border-loss flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <span class="text-white font-bold text-sm">C钱包（估值定投）</span>
-                <span id="signal-c-status" class="bg-gray-500 text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
+                <span id="signal-c-status" class="bg-neutral text-white text-xs font-medium rounded-full px-3 py-1">观望</span>
               </div>
               <div class="text-textmuted text-xs space-y-1">
                 <p id="signal-c-caption">当前MVRV状态：--</p>
@@ -302,7 +355,7 @@
           <div class="grid grid-cols-3 gap-5">
 
             <!-- A钱包资产卡 -->
-            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+            <div id="wallet-a-card" class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2 cursor-pointer hover:ring-1 hover:ring-white/20 transition-shadow" title="点击查看A钱包的全部交易记录">
               <span class="text-white font-bold text-sm mb-1">A钱包</span>
               <span id="wallet-a-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
 
@@ -337,13 +390,13 @@
                   <span id="wallet-a-progress-pct">0%</span>
                 </div>
                 <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div id="wallet-a-progress-bar" class="h-full bg-profit rounded-full" style="width: 0%"></div>
+                  <div id="wallet-a-progress-bar" class="h-full bg-profit rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
                 </div>
               </div>
             </div>
 
             <!-- B钱包资产卡 -->
-            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+            <div id="wallet-b-card" class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2 cursor-pointer hover:ring-1 hover:ring-white/20 transition-shadow" title="点击查看B钱包的全部交易记录">
               <span class="text-white font-bold text-sm mb-1">B钱包</span>
               <span id="wallet-b-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
 
@@ -378,13 +431,13 @@
                   <span id="wallet-b-progress-pct">0%</span>
                 </div>
                 <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div id="wallet-b-progress-bar" class="h-full bg-accent rounded-full" style="width: 0%"></div>
+                  <div id="wallet-b-progress-bar" class="h-full bg-accent rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
                 </div>
               </div>
             </div>
 
             <!-- C钱包资产卡 -->
-            <div class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2">
+            <div id="wallet-c-card" class="bg-card rounded-lg shadow-card p-5 flex flex-col gap-2 cursor-pointer hover:ring-1 hover:ring-white/20 transition-shadow" title="点击查看C钱包的全部交易记录">
               <span class="text-white font-bold text-sm mb-1">C钱包</span>
               <span id="wallet-c-address" class="text-textmuted text-[11px] font-mono truncate -mt-1 mb-1">地址：--</span>
 
@@ -419,7 +472,7 @@
                   <span id="wallet-c-progress-pct">0%</span>
                 </div>
                 <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div id="wallet-c-progress-bar" class="h-full bg-loss rounded-full" style="width: 0%"></div>
+                  <div id="wallet-c-progress-bar" class="h-full bg-loss rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
                 </div>
               </div>
             </div>
@@ -517,7 +570,7 @@
         <!-- ============ 页面：总览看板 结束 ============ -->
 
         <!-- ============ 页面：交易记录 ============ -->
-        <div id="page-transactions" class="hidden space-y-5">
+        <div id="page-transactions" class="hidden space-y-5 transition-opacity duration-200 ease-in-out opacity-0">
 
           <!-- 筛选栏 -->
           <div class="bg-card rounded-lg shadow-card p-5 flex flex-wrap items-center gap-3">
@@ -575,9 +628,9 @@
             <div class="flex items-center justify-between px-4 py-3 border-t border-white/10">
               <span id="tx-page-info" class="text-textmuted text-xs">共0条记录</span>
               <div class="flex items-center gap-2">
-                <button type="button" id="tx-prev-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">上一页</button>
+                <button type="button" id="tx-prev-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">上一页</button>
                 <span id="tx-page-current" class="text-textmuted text-xs px-1">1/1</span>
-                <button type="button" id="tx-next-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">下一页</button>
+                <button type="button" id="tx-next-page" class="bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded-md px-3 py-1.5 transition-colors">下一页</button>
               </div>
             </div>
           </div>
@@ -586,14 +639,14 @@
         <!-- ============ 页面：交易记录 结束 ============ -->
 
         <!-- ============ 页面：钱包管理 ============ -->
-        <div id="page-wallets" class="hidden space-y-5">
+        <div id="page-wallets" class="hidden space-y-5 transition-opacity duration-200 ease-in-out opacity-0">
           <div id="wm-a-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
           <div id="wm-b-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
           <div id="wm-c-card" class="bg-card rounded-lg shadow-card border border-white/10 p-6 flex flex-col gap-5"></div>
         </div>
 
         <!-- ============ 页面：数据分析 ============ -->
-        <div id="page-analytics" class="hidden space-y-5">
+        <div id="page-analytics" class="hidden space-y-5 transition-opacity duration-200 ease-in-out opacity-0">
 
           <!-- 模块1：全局收益概览 -->
           <section>
@@ -601,25 +654,25 @@
             <div class="grid grid-cols-5 gap-5">
               <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
                 <span class="text-textmuted text-xs">总投入 USDC</span>
-                <span id="an-total-invested" class="text-white font-bold text-xl mt-2">$--</span>
+                <span id="an-total-invested" class="text-white font-bold text-2xl mt-2">$--</span>
               </div>
               <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
                 <span class="text-textmuted text-xs">总持仓 BTC</span>
-                <span id="an-total-btc" class="text-white font-bold text-xl mt-2">-- BTC</span>
+                <span id="an-total-btc" class="text-white font-bold text-2xl mt-2">-- BTC</span>
               </div>
               <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
                 <span class="text-textmuted text-xs">总浮动盈亏</span>
-                <span id="an-total-pnl" class="font-bold text-xl mt-2 text-textmuted">--</span>
+                <span id="an-total-pnl" class="font-bold text-2xl mt-2 text-textmuted">--</span>
               </div>
               <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
                 <span class="text-textmuted text-xs">总收益率</span>
-                <span id="an-total-pnl-pct" class="font-bold text-xl mt-2 text-textmuted">--</span>
+                <span id="an-total-pnl-pct" class="font-bold text-2xl mt-2 text-textmuted">--</span>
               </div>
               <div class="bg-card rounded-lg shadow-card p-5 flex flex-col">
                 <span class="text-textmuted text-xs">整体资金使用率</span>
-                <span id="an-fund-usage" class="text-white font-bold text-xl mt-2">--%</span>
+                <span id="an-fund-usage" class="text-white font-bold text-2xl mt-2">--%</span>
                 <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mt-2">
-                  <div id="an-fund-usage-bar" class="h-full bg-accent rounded-full" style="width: 0%"></div>
+                  <div id="an-fund-usage-bar" class="h-full bg-accent rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
                 </div>
               </div>
             </div>
@@ -677,7 +730,7 @@
         </div>
 
         <!-- ============ 页面：系统设置 ============ -->
-        <div id="page-settings" class="hidden space-y-5">
+        <div id="page-settings" class="hidden space-y-5 transition-opacity duration-200 ease-in-out opacity-0">
 
           <!-- 1. 自动刷新设置 -->
           <section class="bg-card rounded-lg shadow-card p-5">
@@ -776,6 +829,31 @@
             </div>
           </section>
 
+          <!-- 5. 操作日志 -->
+          <section>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-white font-bold text-base">操作日志</h2>
+              <span class="text-textmuted text-xs">仅可查看，最多保留最近200条（超出自动覆盖最早记录）</span>
+            </div>
+            <div class="bg-card rounded-lg shadow-card border border-white/10 overflow-hidden">
+              <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-sm border-collapse">
+                  <thead class="sticky top-0">
+                    <tr class="bg-black/20 border-b border-white/10">
+                      <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">操作时间</th>
+                      <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">操作人</th>
+                      <th class="px-4 py-3 text-left text-textmuted text-xs font-medium whitespace-nowrap">操作类型</th>
+                      <th class="px-4 py-3 text-left text-textmuted text-xs font-medium">操作内容摘要</th>
+                    </tr>
+                  </thead>
+                  <tbody id="op-log-tbody">
+                    <tr><td colspan="4" class="px-4 py-6 text-center text-textmuted text-sm">暂无操作日志</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
         </div>
 
       </main>
@@ -787,6 +865,23 @@
   <!-- ============ 轻提示 Toast（用于地址复制成功等反馈） ============ -->
   <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/90 text-white text-sm rounded-md px-4 py-2 shadow-lg z-50 opacity-0 pointer-events-none transition-opacity duration-300">
     已复制到剪贴板
+  </div>
+
+  <!-- ============ 全局加载动画遮罩（导出/导入/统计计算等耗时操作时显示） ============ -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[60]">
+    <div class="bg-card rounded-lg shadow-card px-6 py-5 flex flex-col items-center gap-3">
+      <svg class="w-6 h-6 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+      <span id="loading-overlay-text" class="text-white text-sm">处理中...</span>
+    </div>
+  </div>
+
+  <!-- ============ 全局异常兜底提示条（渲染出错时展示，避免白屏） ============ -->
+  <div id="global-error-banner" class="fixed top-0 left-0 right-0 bg-loss text-white text-sm px-4 py-2 hidden items-center justify-between gap-3 z-[70]">
+    <span id="global-error-text">页面部分内容加载异常，已自动恢复展示，请尝试刷新页面</span>
+    <button type="button" id="global-error-dismiss" class="text-white/80 hover:text-white text-xs font-medium shrink-0">知道了</button>
   </div>
 
   <!-- ============ 交易记录编辑弹窗 ============ -->
@@ -855,7 +950,7 @@
       <input type="text" id="reset-confirm-input" placeholder="请输入：确认重置" class="w-full bg-bgmain border border-white/10 text-white text-sm rounded-md p-2 placeholder-textmuted focus:outline-none focus:border-loss">
       <div class="flex items-center gap-3 mt-2">
         <button type="button" id="reset-confirm-cancel" class="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-md py-2 transition-colors">取消</button>
-        <button type="button" id="reset-confirm-ok" disabled class="flex-1 bg-loss disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 text-white text-sm font-medium rounded-md py-2 transition-colors">确认重置</button>
+        <button type="button" id="reset-confirm-ok" disabled class="flex-1 bg-loss disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 text-white text-sm font-medium rounded-md py-2 transition-colors">确认重置</button>
       </div>
     </div>
   </div>
@@ -875,7 +970,8 @@
     TRANSACTIONS: 'btc-dca-transactions-v1',
     WALLET_CONFIG: 'btc-dca-wallet-config-v2',
     MARKET_CACHE: 'btc-dca-market-cache-v1',
-    SETTINGS: 'btc-dca-app-settings-v1'
+    SETTINGS: 'btc-dca-app-settings-v1',
+    OPERATION_LOGS: 'btc-dca-operation-logs-v1'
   };
 
   function isPlainObject(v) {
@@ -1047,7 +1143,11 @@
     signalCSuggestion: document.getElementById('signal-c-suggestion'),
     signalAStatus: document.getElementById('signal-a-status'),
     signalACaption: document.getElementById('signal-a-caption'),
-    signalASuggestion: document.getElementById('signal-a-suggestion')
+    signalASuggestion: document.getElementById('signal-a-suggestion'),
+    topbarTitle: document.getElementById('topbar-title'),
+    topbarSubtitle: document.getElementById('topbar-subtitle'),
+    topbarBtcPrice: document.getElementById('topbar-btc-price'),
+    topbarBtcChange: document.getElementById('topbar-btc-change')
   };
 
   // ============ 钱包资产概览：各卡片 DOM 引用 ============
@@ -1186,6 +1286,100 @@
 
   function saveSettings() {
     safeSaveJSON(STORAGE_KEYS.SETTINGS, APP_SETTINGS);
+  }
+
+  // ============================================================
+  // 操作日志系统：记录交易记录增删改 / 钱包地址修改 / 数据导入与重置 / 系统设置变更
+  // 仅可查看不可删除，本地存储持久化，最多保留最近200条（超出自动覆盖最早记录）
+  // ============================================================
+  const MAX_LOG_ENTRIES = 200;
+
+  function validateOperationLogs(v) {
+    if (!Array.isArray(v)) return false;
+    return v.every(
+      (l) =>
+        isPlainObject(l) &&
+        typeof l.id === 'string' && l.id.length > 0 &&
+        typeof l.time === 'string' && !isNaN(new Date(l.time).getTime()) &&
+        typeof l.operator === 'string' &&
+        typeof l.type === 'string' &&
+        typeof l.summary === 'string'
+    );
+  }
+
+  let operationLogs = safeLoadJSON(STORAGE_KEYS.OPERATION_LOGS, validateOperationLogs, [], '操作日志');
+
+  function saveOperationLogsToStorage() {
+    safeSaveJSON(STORAGE_KEYS.OPERATION_LOGS, operationLogs);
+  }
+
+  // 当前操作人：复用侧边栏「快速记录」里始终可见的操作人下拉框，作为全应用统一的"当前操作人"标识
+  function getCurrentOperator() {
+    const el = document.getElementById('quick-operator');
+    return el && el.value ? el.value : '--';
+  }
+
+  function genLogId() {
+    return `log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  /**
+   * 写入一条操作日志
+   * @param {string} type 操作类型，如：新增交易 / 编辑交易 / 删除交易 / 修改地址 / 数据导入 / 数据重置 / 系统设置变更
+   * @param {string} summary 操作内容摘要（一句话描述具体改了什么）
+   * @param {string} [operatorOverride] 显式指定操作人（不传则取当前操作人下拉框的值）
+   */
+  function logOperation(type, summary, operatorOverride) {
+    const entry = {
+      id: genLogId(),
+      time: new Date().toISOString(),
+      operator: operatorOverride || getCurrentOperator(),
+      type,
+      summary
+    };
+    operationLogs.unshift(entry); // 最新的记录放在最前面，天然满足"按时间倒序"
+    if (operationLogs.length > MAX_LOG_ENTRIES) {
+      operationLogs.length = MAX_LOG_ENTRIES; // 规则⑤：超出200条自动覆盖（丢弃）最早的记录
+    }
+    saveOperationLogsToStorage();
+    if (typeof renderOperationLogs === 'function') renderOperationLogs();
+  }
+
+  const LOG_TYPE_BADGE_STYLE = {
+    新增交易: 'bg-profit',
+    编辑交易: 'bg-accent',
+    删除交易: 'bg-loss',
+    修改地址: 'bg-accent',
+    数据导入: 'bg-accent',
+    数据重置: 'bg-loss',
+    系统设置变更: 'bg-neutral'
+  };
+
+  function renderOperationLogs() {
+    const tbody = document.getElementById('op-log-tbody');
+    if (!tbody) return; // 页面尚未渲染（设置页DOM不存在）时直接跳过
+
+    if (!operationLogs.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-textmuted text-sm">暂无操作日志</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = operationLogs
+      .map((log, i) => {
+        const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
+        const badgeClass = LOG_TYPE_BADGE_STYLE[log.type] || 'bg-neutral';
+        return `
+          <tr class="border-b border-white/10 last:border-b-0 ${stripe}">
+            <td class="px-4 py-2.5 text-white whitespace-nowrap">${formatDisplayTime(log.time)}</td>
+            <td class="px-4 py-2.5 text-white whitespace-nowrap">${log.operator}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap">
+              <span class="${badgeClass} text-white text-xs font-medium rounded-full px-2.5 py-1">${log.type}</span>
+            </td>
+            <td class="px-4 py-2.5 text-textmuted">${log.summary}</td>
+          </tr>
+        `;
+      })
+      .join('');
   }
 
   function formatUsdc(v) {
@@ -1567,15 +1761,15 @@
     if (g.hasPnl) {
       const up = g.totalPnl >= 0;
       elPnl.textContent = `${up ? '+' : '-'}$${Math.abs(g.totalPnl).toLocaleString(undefined, { minimumFractionDigits: APP_SETTINGS.usdcDecimals, maximumFractionDigits: APP_SETTINGS.usdcDecimals })}`;
-      elPnl.className = `font-bold text-xl mt-2 ${up ? 'text-profit' : 'text-loss'}`;
+      elPnl.className = `font-bold text-2xl mt-2 ${up ? 'text-profit' : 'text-loss'}`;
       const upPct = g.totalPnlPct >= 0;
       elPnlPct.textContent = `${upPct ? '+' : ''}${g.totalPnlPct.toFixed(2)}%`;
-      elPnlPct.className = `font-bold text-xl mt-2 ${upPct ? 'text-profit' : 'text-loss'}`;
+      elPnlPct.className = `font-bold text-2xl mt-2 ${upPct ? 'text-profit' : 'text-loss'}`;
     } else {
       elPnl.textContent = '--';
-      elPnl.className = 'font-bold text-xl mt-2 text-textmuted';
+      elPnl.className = 'font-bold text-2xl mt-2 text-textmuted';
       elPnlPct.textContent = '--';
-      elPnlPct.className = 'font-bold text-xl mt-2 text-textmuted';
+      elPnlPct.className = 'font-bold text-2xl mt-2 text-textmuted';
     }
 
     elUsage.textContent = `${g.fundUsagePct.toFixed(1)}%`;
@@ -1886,7 +2080,7 @@
 
     tbody.innerHTML = sorted
       .map((r, i) => {
-        const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-gray-500' };
+        const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-neutral' };
         const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
         return `
           <tr class="border-b border-white/10 last:border-b-0 ${stripe} hover:bg-black/30 transition-colors">
@@ -1928,12 +2122,17 @@
    *   刷新饼图/柱状图 → 刷新全局汇总 → 写入本地存储
    */
   function refreshAll() {
-    recomputeWalletsFromTransactions();
-    renderTransactionTable(transactionRecords);
-    if (typeof renderFullTransactionsPage === 'function') renderFullTransactionsPage();
-    renderWallets(); // 内部会联动 refreshAssetCharts() 与 renderGlobalSummary()
-    saveTransactionsToStorage();
-    if (typeof updateQuickTierHint === 'function') updateQuickTierHint(); // 联动刷新快速记录表单的档位/剩余额度提示
+    try {
+      recomputeWalletsFromTransactions();
+      renderTransactionTable(transactionRecords);
+      if (typeof renderFullTransactionsPage === 'function') renderFullTransactionsPage();
+      renderWallets(); // 内部会联动 refreshAssetCharts() 与 renderGlobalSummary()
+      saveTransactionsToStorage();
+      if (typeof updateQuickTierHint === 'function') updateQuickTierHint(); // 联动刷新快速记录表单的档位/剩余额度提示
+    } catch (e) {
+      console.error('[全页面联动刷新] 执行异常：', e);
+      showGlobalError('数据刷新时出现异常，页面可能未完全更新，请刷新页面确认');
+    }
   }
 
   function genTxId() {
@@ -1975,8 +2174,15 @@
       note: validation.tierCode === '收尾买入' ? '资金兜底：全额收尾买入' : (validation.tierCode === '补操作' ? '27日未操作，顺延至28日' : '')
     });
     refreshAll();
+    logOperation(
+      '新增交易',
+      `${CHART_LABELS[wallet] || wallet} 投入${formatUsdc(invested)}，成交价$${round2(p)}，买入${formatBtcNum(btcAmount)} BTC${validation.tierCode ? `（${validation.tierCode}）` : ''}`,
+      operator
+    );
     if (validation.tierCode === '收尾买入' || validation.tierCode === '补操作') {
       showToast(`已按「${validation.tierCode}」规则记录本次买入`);
+    } else {
+      showToast('交易记录已提交成功'); // 需求①：提交成功统一给出轻量Toast反馈
     }
     return { ok: true };
   }
@@ -2026,6 +2232,7 @@
     if (!editingId) return;
     const record = transactionRecords.find((r) => r.id === editingId);
     if (!record) return;
+    const before = { ...record }; // 保存前快照，用于日志中的"修改前→修改后"对比
     const operator = document.getElementById('edit-operator').value;
     const wallet = document.getElementById('edit-wallet').value;
     const invested = round2(parseFloat(document.getElementById('edit-invested').value));
@@ -2062,16 +2269,30 @@
 
     closeEditModal();
     refreshAll();
+    logOperation(
+      '编辑交易',
+      `${CHART_LABELS[before.wallet] || before.wallet} 投入${formatUsdc(before.investedUsdc)}/成交价$${before.price} → ${CHART_LABELS[record.wallet] || record.wallet} 投入${formatUsdc(record.investedUsdc)}/成交价$${record.price}（记录ID：${record.id}）`
+    );
     if (validation.tierCode === '收尾买入' && selectedTier !== '收尾买入') {
       showToast('剩余资金不足1份，已自动标记为「收尾买入」');
+    } else {
+      showToast('交易记录已保存修改'); // 需求①：编辑成功统一给出轻量Toast反馈
     }
   }
 
   // 删除：从当前记录集中移除，并触发全页面联动刷新
   function deleteTransactionRecord(id) {
     if (!window.confirm('确认删除这条交易记录吗？删除后钱包数据将自动重新计算。')) return;
+    const record = transactionRecords.find((r) => r.id === id);
     transactionRecords = transactionRecords.filter((r) => r.id !== id);
     refreshAll();
+    if (record) {
+      logOperation(
+        '删除交易',
+        `删除了 ${CHART_LABELS[record.wallet] || record.wallet} 于${formatDisplayTime(record.time)}的记录：投入${formatUsdc(record.investedUsdc)}，买入${formatBtcNum(record.btcAmount)} BTC`
+      );
+    }
+    showToast('交易记录已删除'); // 需求①：删除成功统一给出轻量Toast反馈
   }
 
   /**
@@ -2093,36 +2314,108 @@
   // ============================================================
   const PAGE_KEYS = ['overview', 'transactions', 'wallets', 'analytics', 'settings'];
 
+  // 顶部状态栏标题：随导航切换自动更新（标题 + 副标题 + 图标路径）
+  const PAGE_TOPBAR_META = {
+    overview: { title: '总览看板', subtitle: '多人共享 BTC 定投投资控制台', icon: 'M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7 3h4v11h-4V10z' },
+    transactions: { title: '交易记录', subtitle: '全量买入记录 · 筛选 · 导出', icon: 'M4 6h16M4 12h16M4 18h10' },
+    wallets: { title: '钱包管理', subtitle: '三个钱包的地址、策略与资产详情', icon: 'M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z M16 12h.01' },
+    analytics: { title: '数据分析', subtitle: '收益概览 · 钱包对比 · 成本走势', icon: 'M9 19V6M15 19V10M4 19h16M4 19v-4M20 19v-8' },
+    settings: { title: '系统设置', subtitle: '刷新频率 · 数据备份 · 操作日志', icon: 'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z' }
+  };
+
+  function updateTopbarForPage(pageKey) {
+    const meta = PAGE_TOPBAR_META[pageKey];
+    if (!meta || !els.topbarTitle) return;
+    els.topbarTitle.textContent = meta.title;
+    if (els.topbarSubtitle) els.topbarSubtitle.textContent = meta.subtitle;
+    const iconEl = document.getElementById('topbar-page-icon');
+    if (iconEl) {
+      const paths = meta.icon.split(' M').map((p, i) => (i === 0 ? p : `M${p}`));
+      iconEl.querySelector('svg').innerHTML = paths
+        .map((d) => `<path stroke-linecap="round" stroke-linejoin="round" d="${d}"/>`)
+        .join('');
+    }
+  }
+
   function switchPage(pageKey) {
+    const previousKey = PAGE_KEYS.find((p) => {
+      const el = document.getElementById(`page-${p}`);
+      return el && !el.classList.contains('hidden');
+    });
+
     PAGE_KEYS.forEach((p) => {
       const el = document.getElementById(`page-${p}`);
-      if (el) el.classList.toggle('hidden', p !== pageKey);
+      if (!el) return;
+      if (p === pageKey) {
+        el.classList.remove('hidden');
+        // 先保持透明，等浏览器完成一次重排后再淡入，避免"瞬间跳出"的闪烁感
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.classList.remove('opacity-0');
+            el.classList.add('opacity-100');
+          });
+        });
+      } else if (p === previousKey) {
+        el.classList.remove('opacity-100');
+        el.classList.add('opacity-0');
+        // 等淡出过渡结束后再真正隐藏，避免与新页面的淡入同时发生导致的闪烁
+        setTimeout(() => {
+          const stillHidden = document.getElementById(`page-${pageKey}`);
+          if (stillHidden && !stillHidden.classList.contains('hidden')) el.classList.add('hidden');
+        }, 200);
+      }
     });
+
     document.querySelectorAll('.nav-item').forEach((a) => {
       const isActive = a.dataset.page === pageKey;
       a.classList.toggle('bg-accent', isActive);
       a.classList.toggle('text-white', isActive);
       a.classList.toggle('text-textmuted', !isActive);
     });
-    if (pageKey === 'transactions') {
-      txCurrentPage = 1;
-      renderFullTransactionsPage();
-    }
-    if (pageKey === 'wallets') {
-      renderWalletManagementPage();
-    }
-    if (pageKey === 'analytics') {
-      renderAnalyticsPage();
-      // Chart.js 在隐藏容器(display:none)中无法正确计算尺寸，切换到该页可见后需要手动触发一次resize
-      if (walletCompareChart) walletCompareChart.resize();
-      if (costTrendChart) costTrendChart.resize();
-    }
+
+    updateTopbarForPage(pageKey); // 顶部状态栏标题/副标题/图标随当前页面联动更新
+
+    // 每个分页的渲染都做异常兜底：单个页面渲染出错不影响导航切换本身，也不会导致白屏
+    safeRender('交易记录页', () => {
+      if (pageKey === 'transactions') {
+        txCurrentPage = 1;
+        renderFullTransactionsPage();
+      }
+    });
+    safeRender('钱包管理页', () => {
+      if (pageKey === 'wallets') renderWalletManagementPage();
+    });
+    safeRender('数据分析页', () => {
+      if (pageKey === 'analytics') {
+        withLoadingOverlay('正在计算统计数据...', () => {
+          renderAnalyticsPage();
+          // Chart.js 在隐藏容器(display:none)中无法正确计算尺寸，切换到该页可见后需要手动触发一次resize
+          if (walletCompareChart) walletCompareChart.resize();
+          if (costTrendChart) costTrendChart.resize();
+        });
+      }
+    });
+    safeRender('系统设置页', () => {
+      if (pageKey === 'settings') renderOperationLogs();
+    });
   }
 
   document.querySelectorAll('.nav-item').forEach((a) => {
     a.addEventListener('click', (evt) => {
       evt.preventDefault();
       switchPage(a.dataset.page);
+    });
+  });
+
+  // 快捷跳转：总览页点击钱包卡片 → 跳转到交易记录页并自动按该钱包筛选
+  ['a', 'b', 'c'].forEach((key) => {
+    const card = document.getElementById(`wallet-${key}-card`);
+    if (!card) return;
+    card.addEventListener('click', () => {
+      const filterEl = document.getElementById('tx-filter-wallet');
+      if (filterEl) filterEl.value = key;
+      switchPage('transactions');
+      showToast(`已跳转并筛选${CHART_LABELS[key] || key}的交易记录`);
     });
   });
 
@@ -2133,7 +2426,7 @@
   let txCurrentPage = 1;
 
   const WITHDRAW_STATUS_STYLE = {
-    未提币: 'bg-gray-500',
+    未提币: 'bg-neutral',
     提币中: 'bg-accent',
     已到账: 'bg-profit'
   };
@@ -2175,9 +2468,9 @@
     } else {
       tbody.innerHTML = pageItems
         .map((r, i) => {
-          const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-gray-500' };
+          const meta = TX_WALLET_META[r.wallet] || { label: r.wallet, dot: 'bg-neutral' };
           const stripe = i % 2 === 1 ? 'bg-white/[0.03]' : '';
-          const statusClass = WITHDRAW_STATUS_STYLE[r.withdrawStatus] || 'bg-gray-500';
+          const statusClass = WITHDRAW_STATUS_STYLE[r.withdrawStatus] || 'bg-neutral';
           const hashDisplay = r.withdrawHash ? `${r.withdrawHash.slice(0, 6)}...${r.withdrawHash.slice(-4)}` : '--';
           return `
             <tr class="border-b border-white/10 last:border-b-0 ${stripe} hover:bg-black/30 transition-colors">
@@ -2303,12 +2596,44 @@
     if (csvExportBtn.disabled) return; // 防重复提交
     csvExportBtn.disabled = true;
     csvExportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    showLoadingOverlay('正在导出交易记录...');
     setTimeout(() => {
-      exportTransactionsToCsv();
-      csvExportBtn.disabled = false;
-      csvExportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      try {
+        exportTransactionsToCsv();
+        showToast('交易记录已导出为CSV文件');
+      } catch (e) {
+        console.error('[导出CSV] 执行异常：', e);
+        showToast('导出失败，请重试或检查筛选条件');
+      } finally {
+        hideLoadingOverlay();
+        csvExportBtn.disabled = false;
+        csvExportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
     }, 300);
   });
+
+  // ---- 数字输入框校验：自动过滤非数字字符、禁止负数、限制小数位数 ----
+  // 用于"投入USDC"/"成交价格"等金额类输入框，避免用户输入负数、多个小数点或科学计数法字符
+  function attachDecimalInputGuard(el, maxDecimals) {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const raw = el.value;
+      // 去掉负号/正号/科学计数法字符（禁止负数与非常规数字格式）
+      let cleaned = raw.replace(/[eE+-]/g, '');
+      const dotIdx = cleaned.indexOf('.');
+      if (dotIdx !== -1) {
+        const intPart = cleaned.slice(0, dotIdx);
+        let decPart = cleaned.slice(dotIdx + 1).replace(/\./g, ''); // 只保留第一个小数点，多余的丢弃
+        if (decPart.length > maxDecimals) decPart = decPart.slice(0, maxDecimals); // 限制小数位数
+        cleaned = `${intPart}.${decPart}`;
+      }
+      if (cleaned !== raw) el.value = cleaned;
+    });
+  }
+  attachDecimalInputGuard(document.getElementById('quick-invested'), 2);
+  attachDecimalInputGuard(document.getElementById('quick-price'), 2);
+  attachDecimalInputGuard(document.getElementById('edit-invested'), 2);
+  attachDecimalInputGuard(document.getElementById('edit-price'), 2);
 
   // ---- 编辑弹窗按钮与实时BTC预览绑定 ----
   document.getElementById('edit-invested').addEventListener('input', updateEditBtcPreview);
@@ -2418,15 +2743,15 @@
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
-  // 状态指示灯：success=绿色同步成功，refreshing=黄色刷新中，error=红色获取失败
+  // 状态指示灯：success=绿色已同步，refreshing=黄色同步中，error=红色获取失败
   function setStatus(status) {
     const map = {
-      success: { color: 'bg-profit', text: '数据同步中' },
-      refreshing: { color: 'bg-yellow-400', text: '刷新中' },
-      error: { color: 'bg-loss', text: '数据更新失败，使用缓存数据' }
+      success: { color: 'bg-profit', text: '数据已同步' },
+      refreshing: { color: 'bg-warning', text: '同步中...' },
+      error: { color: 'bg-loss', text: '更新失败，使用缓存' }
     };
     const conf = map[status] || map.refreshing;
-    els.statusDot.className = `w-2.5 h-2.5 rounded-full ${conf.color}`;
+    els.statusDot.className = `w-2 h-2 rounded-full transition-colors duration-300 ${conf.color}`;
     els.statusText.textContent = conf.text;
   }
 
@@ -2512,6 +2837,17 @@
     }
     renderSparkline(els.btcPriceSpark, cache.btcSpark);
 
+    // 顶部状态栏：BTC实时价格行情条（与行情看板卡片同源，保持完全一致）
+    if (els.topbarBtcPrice) {
+      els.topbarBtcPrice.textContent =
+        cache.btcPrice != null ? `$${cache.btcPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '$--';
+    }
+    if (els.topbarBtcChange && cache.btcChangePct != null) {
+      const up = cache.btcChangePct >= 0;
+      els.topbarBtcChange.textContent = `${up ? '+' : ''}${cache.btcChangePct.toFixed(2)}%`;
+      els.topbarBtcChange.className = `text-xs font-medium tabular-nums ${up ? 'text-profit' : 'text-loss'}`;
+    }
+
     // 恐惧贪婪指数
     if (cache.fng != null) {
       els.fngValue.textContent = cache.fng;
@@ -2560,7 +2896,7 @@
   function setSignalTag(el, text, tone) {
     // tone: 'triggered-orange' | 'triggered-red' | 'idle'
     const toneClass =
-      tone === 'triggered-orange' ? 'bg-accent' : tone === 'triggered-red' ? 'bg-loss' : 'bg-gray-500';
+      tone === 'triggered-orange' ? 'bg-accent' : tone === 'triggered-red' ? 'bg-loss' : 'bg-neutral';
     el.textContent = text;
     el.className = `${toneClass} text-white text-xs font-medium rounded-full px-3 py-1`;
   }
@@ -2804,6 +3140,85 @@
   // 「钱包管理」页面
   // ============================================================
 
+  // ---- 全局加载动画遮罩（导出/导入/统计计算等耗时操作时显示） ----
+  function showLoadingOverlay(text) {
+    const el = document.getElementById('loading-overlay');
+    if (!el) return;
+    const textEl = document.getElementById('loading-overlay-text');
+    if (textEl) textEl.textContent = text || '处理中...';
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+  }
+
+  function hideLoadingOverlay() {
+    const el = document.getElementById('loading-overlay');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  }
+
+  /**
+   * 用加载动画包裹一段同步计算：先让加载动画渲染出来（等待一帧），
+   * 再执行实际计算，计算完成后隐藏动画。计算过程中若抛出异常，
+   * 会被 safeRender 捕获并给出友好提示，而不是让页面卡在加载状态或白屏。
+   */
+  function withLoadingOverlay(text, fn) {
+    showLoadingOverlay(text);
+    setTimeout(() => {
+      try {
+        fn();
+      } catch (e) {
+        console.error(`[${text || '处理'}] 执行异常：`, e);
+        showGlobalError(`执行"${text || '该操作'}"时出现异常，已跳过本次计算，请刷新页面后重试`);
+      } finally {
+        hideLoadingOverlay();
+      }
+    }, 30); // 短暂延迟，确保加载动画有机会先绘制出来，避免"计算太快看不到动画"
+  }
+
+  // ---- 全局异常兜底：单个页面渲染函数出错时，展示友好提示条而非留下白屏 ----
+  function showGlobalError(message) {
+    const banner = document.getElementById('global-error-banner');
+    const textEl = document.getElementById('global-error-text');
+    if (!banner) return;
+    if (textEl) textEl.textContent = message || '页面部分内容加载异常，已自动恢复展示，请尝试刷新页面';
+    banner.classList.remove('hidden');
+    banner.classList.add('flex');
+  }
+
+  function hideGlobalError() {
+    const banner = document.getElementById('global-error-banner');
+    if (!banner) return;
+    banner.classList.add('hidden');
+    banner.classList.remove('flex');
+  }
+
+  const globalErrorDismissBtn = document.getElementById('global-error-dismiss');
+  if (globalErrorDismissBtn) globalErrorDismissBtn.addEventListener('click', hideGlobalError);
+
+  /**
+   * 用 try/catch 包裹一段渲染逻辑：出错时在控制台记录详细信息、弹出友好提示条，
+   * 但不会让异常继续向上抛出中断后续代码——避免因为某个模块的渲染异常导致整个页面变白屏。
+   */
+  function safeRender(label, fn) {
+    try {
+      fn();
+    } catch (e) {
+      console.error(`[页面渲染异常] ${label}：`, e);
+      showGlobalError(`「${label}」加载时出现异常，已尝试保留其余内容正常显示`);
+    }
+  }
+
+  // 捕获未被主动处理的运行时异常/Promise异常，避免它们导致页面卡死或白屏
+  window.addEventListener('error', (evt) => {
+    console.error('[全局异常]', evt.error || evt.message);
+    showGlobalError('页面运行时出现异常，部分功能可能受影响，建议刷新页面');
+  });
+  window.addEventListener('unhandledrejection', (evt) => {
+    console.error('[未处理的Promise异常]', evt.reason);
+    showGlobalError('后台操作出现异常，部分功能可能受影响，建议刷新页面');
+  });
+
   // ---- 轻提示 Toast ----
   let toastTimer = null;
   function showToast(message) {
@@ -2816,7 +3231,7 @@
     toastTimer = setTimeout(() => {
       el.classList.remove('opacity-100');
       el.classList.add('opacity-0');
-    }, 1800);
+    }, 2000);
   }
 
   // ---- 地址格式校验 ----
@@ -3242,6 +3657,7 @@
           renderWalletManagementPage();
           renderWallets(); // 概览卡片地址展示同步刷新
           showToast('已保存（BTC地址：待补充）');
+          logOperation('修改地址', `${CHART_LABELS[key] || key} 的${label}已清空，标记为"待补充"`);
           return;
         }
 
@@ -3259,6 +3675,7 @@
         renderWalletManagementPage();
         renderWallets(); // 概览卡片地址展示同步刷新
         showToast(`${label}已保存`);
+        logOperation('修改地址', `${CHART_LABELS[key] || key} 的${label}已更新为 ${value}`);
       } finally {
         saveBtn.disabled = false;
       }
@@ -3380,11 +3797,12 @@
     });
   }
 
-  initAssetCharts();
-  recomputeWalletsFromTransactions(); // 依据已加载（本地存储或默认）的交易记录聚合出钱包数据
-  renderTransactionTable(transactionRecords); // 渲染交易记录表格
-  renderFromCache(); // 先用本地存储中的缓存行情数据渲染一次（含策略信号 + 钱包卡片），避免刷新瞬间变回"--"
-  applySparklineVisibility();
+  safeRender('资产图表初始化', () => initAssetCharts());
+  safeRender('钱包数据聚合', () => recomputeWalletsFromTransactions()); // 依据已加载（本地存储或默认）的交易记录聚合出钱包数据
+  safeRender('交易记录表格', () => renderTransactionTable(transactionRecords)); // 渲染交易记录表格
+  safeRender('总览看板', () => renderFromCache()); // 先用本地存储中的缓存行情数据渲染一次（含策略信号 + 钱包卡片），避免刷新瞬间变回"--"
+  safeRender('操作日志', () => renderOperationLogs()); // 页面加载时渲染一次本地存储中已有的操作日志
+  safeRender('走势图显示设置', () => applySparklineVisibility());
 
   // ============================================================
   // 自动刷新调度：
@@ -3475,6 +3893,30 @@
   runFastPollCycle();
   runSlowPollCycle();
 
+  // ---- 顶部状态栏：手动刷新按钮 ----
+  const topbarRefreshBtn = document.getElementById('topbar-refresh-btn');
+  const topbarRefreshIcon = document.getElementById('topbar-refresh-icon');
+  if (topbarRefreshBtn) {
+    topbarRefreshBtn.addEventListener('click', async () => {
+      if (topbarRefreshBtn.disabled) return; // 防重复点击：刷新进行中禁止再次触发
+      topbarRefreshBtn.disabled = true;
+      topbarRefreshBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      if (topbarRefreshIcon) topbarRefreshIcon.classList.add('animate-spin');
+      stopPolling();
+      fastFailStreak = 0;
+      slowFailStreak = 0;
+      await Promise.all([pollFast(), pollSlow()]);
+      if (APP_SETTINGS.autoRefreshEnabled) {
+        fastPollTimeoutId = setTimeout(runFastPollCycle, getFastBaseMs());
+        slowPollTimeoutId = setTimeout(runSlowPollCycle, getSlowBaseMs());
+      }
+      if (topbarRefreshIcon) topbarRefreshIcon.classList.remove('animate-spin');
+      topbarRefreshBtn.disabled = false;
+      topbarRefreshBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      showToast('行情数据已刷新');
+    });
+  }
+
   // ============================================================
   // 系统设置页交互
   // ============================================================
@@ -3498,6 +3940,7 @@
         stopPolling();
       }
       showToast(APP_SETTINGS.autoRefreshEnabled ? '已开启自动刷新' : '已关闭自动刷新');
+      logOperation('系统设置变更', `自动刷新开关：${APP_SETTINGS.autoRefreshEnabled ? '开启' : '关闭'}`);
     });
   }
   if (refreshIntervalSelect) {
@@ -3506,7 +3949,9 @@
       APP_SETTINGS.refreshIntervalMinutes = Number(refreshIntervalSelect.value);
       saveSettings();
       reschedulePolling();
-      showToast(`刷新频率已更新为${refreshIntervalSelect.options[refreshIntervalSelect.selectedIndex].text}`);
+      const newText = refreshIntervalSelect.options[refreshIntervalSelect.selectedIndex].text;
+      showToast(`刷新频率已更新为${newText}`);
+      logOperation('系统设置变更', `行情数据刷新频率修改为：${newText}`);
     });
   }
 
@@ -3532,20 +3977,35 @@
   const exportBackupBtn = document.getElementById('settings-export-backup');
   if (exportBackupBtn) {
     exportBackupBtn.addEventListener('click', () => {
-      const payload = buildBackupPayload();
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const now = new Date();
-      const pad = (n) => String(n).padStart(2, '0');
-      const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-      a.href = url;
-      a.download = `btc-dca-backup_${dateStr}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('备份已导出');
+      if (exportBackupBtn.disabled) return; // 防重复提交
+      exportBackupBtn.disabled = true;
+      exportBackupBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      showLoadingOverlay('正在导出备份文件...');
+      setTimeout(() => {
+        try {
+          const payload = buildBackupPayload();
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const now = new Date();
+          const pad = (n) => String(n).padStart(2, '0');
+          const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+          a.href = url;
+          a.download = `btc-dca-backup_${dateStr}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('备份已导出');
+        } catch (e) {
+          console.error('[导出备份] 执行异常：', e);
+          showToast('导出失败，请重试');
+        } finally {
+          hideLoadingOverlay();
+          exportBackupBtn.disabled = false;
+          exportBackupBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      }, 200);
     });
   }
 
@@ -3562,9 +4022,11 @@
       const file = importFileInput.files && importFileInput.files[0];
       if (!file) return;
       if (backupErrorEl) backupErrorEl.classList.add('hidden');
+      showLoadingOverlay('正在读取备份文件...');
 
       const reader = new FileReader();
       reader.onload = () => {
+        hideLoadingOverlay();
         let parsed;
         try {
           parsed = JSON.parse(reader.result);
@@ -3573,6 +4035,7 @@
             backupErrorEl.textContent = '导入失败：文件内容不是合法的JSON格式';
             backupErrorEl.classList.remove('hidden');
           }
+          showToast('导入失败：文件内容不是合法的JSON格式');
           importFileInput.value = '';
           return;
         }
@@ -3581,6 +4044,7 @@
             backupErrorEl.textContent = '导入失败：文件内容格式与备份数据结构不匹配（校验交易记录/钱包配置字段未通过）';
             backupErrorEl.classList.remove('hidden');
           }
+          showToast('导入失败：文件格式与备份数据结构不匹配');
           importFileInput.value = '';
           return;
         }
@@ -3593,10 +4057,12 @@
         }
       };
       reader.onerror = () => {
+        hideLoadingOverlay();
         if (backupErrorEl) {
           backupErrorEl.textContent = '导入失败：文件读取出错，请重试';
           backupErrorEl.classList.remove('hidden');
         }
+        showToast('文件读取出错，请重试');
       };
       reader.readAsText(file);
     });
@@ -3616,17 +4082,30 @@
   if (importConfirmOkBtn) {
     importConfirmOkBtn.addEventListener('click', () => {
       if (!pendingImportPayload) return;
-      // 恢复交易记录
-      transactionRecords = pendingImportPayload.transactionRecords.map(normalizeRecord);
-      saveTransactionsToStorage();
-      // 恢复钱包配置（逐字段写入，保持 WALLET_CONFIG / walletState 对象引用不变）
-      ['a', 'b', 'c'].forEach((key) => {
-        const src = pendingImportPayload.walletConfig[key];
-        Object.keys(src).forEach((field) => updateWalletConfigField(key, field, src[field]));
-      });
-      refreshAll(); // 内部会联动刷新钱包管理页/资产图表/全局汇总/数据分析页
-      closeImportConfirmModal();
-      showToast('数据已导入恢复');
+      showLoadingOverlay('正在导入恢复数据...');
+      setTimeout(() => {
+        try {
+          const importedCount = pendingImportPayload.transactionRecords.length;
+          // 恢复交易记录
+          transactionRecords = pendingImportPayload.transactionRecords.map(normalizeRecord);
+          saveTransactionsToStorage();
+          // 恢复钱包配置（逐字段写入，保持 WALLET_CONFIG / walletState 对象引用不变）
+          ['a', 'b', 'c'].forEach((key) => {
+            const src = pendingImportPayload.walletConfig[key];
+            Object.keys(src).forEach((field) => updateWalletConfigField(key, field, src[field]));
+          });
+          refreshAll(); // 内部会联动刷新钱包管理页/资产图表/全局汇总/数据分析页
+          closeImportConfirmModal();
+          showToast('数据已导入恢复');
+          logOperation('数据导入', `从备份文件恢复了${importedCount}条交易记录及三个钱包的完整配置，已覆盖此前数据`);
+        } catch (e) {
+          console.error('[导入恢复] 执行异常：', e);
+          showToast('导入过程中出现异常，数据可能未完整恢复，请刷新页面后重试');
+          showGlobalError('导入恢复执行异常，请刷新页面确认数据状态');
+        } finally {
+          hideLoadingOverlay();
+        }
+      }, 200);
     });
   }
 
@@ -3661,11 +4140,24 @@
   if (resetOkBtn) {
     resetOkBtn.addEventListener('click', () => {
       if (resetInput.value.trim() !== RESET_CONFIRM_TEXT) return;
-      transactionRecords = [];
-      saveTransactionsToStorage();
-      refreshAll();
-      closeResetModal();
-      showToast('已清空交易记录，钱包已还原为初始资金状态');
+      showLoadingOverlay('正在重置数据...');
+      setTimeout(() => {
+        try {
+          const clearedCount = transactionRecords.length;
+          transactionRecords = [];
+          saveTransactionsToStorage();
+          refreshAll();
+          closeResetModal();
+          showToast('已清空交易记录，钱包已还原为初始资金状态');
+          logOperation('数据重置', `执行一键重置：清空了${clearedCount}条交易记录，三个钱包已还原为初始资金状态`);
+        } catch (e) {
+          console.error('[一键重置] 执行异常：', e);
+          showToast('重置过程中出现异常，请刷新页面后重试');
+          showGlobalError('重置执行异常，请刷新页面确认数据状态');
+        } finally {
+          hideLoadingOverlay();
+        }
+      }, 200);
     });
   }
 
@@ -3684,17 +4176,21 @@
   if (usdcDecimalsSelect) {
     usdcDecimalsSelect.value = String(APP_SETTINGS.usdcDecimals);
     usdcDecimalsSelect.addEventListener('change', () => {
+      const oldVal = APP_SETTINGS.usdcDecimals;
       APP_SETTINGS.usdcDecimals = Number(usdcDecimalsSelect.value);
       saveSettings();
       reRenderEverythingForDisplaySettings();
+      logOperation('系统设置变更', `USDC显示小数位数：${oldVal}位 → ${APP_SETTINGS.usdcDecimals}位`);
     });
   }
   if (btcDecimalsSelect) {
     btcDecimalsSelect.value = String(APP_SETTINGS.btcDecimals);
     btcDecimalsSelect.addEventListener('change', () => {
+      const oldVal = APP_SETTINGS.btcDecimals;
       APP_SETTINGS.btcDecimals = Number(btcDecimalsSelect.value);
       saveSettings();
       reRenderEverythingForDisplaySettings();
+      logOperation('系统设置变更', `BTC显示小数位数：${oldVal}位 → ${APP_SETTINGS.btcDecimals}位`);
     });
   }
   if (sparklineToggle) {
@@ -3703,6 +4199,7 @@
       APP_SETTINGS.showSparklines = sparklineToggle.checked;
       saveSettings();
       applySparklineVisibility();
+      logOperation('系统设置变更', `迷你走势图显示：${APP_SETTINGS.showSparklines ? '开启' : '关闭'}`);
     });
   }
 })();
